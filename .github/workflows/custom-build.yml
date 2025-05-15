@@ -40,7 +40,7 @@ permissions:
 env:
   solution-name: ARSoft.Tools.Net.sln
   repo_name: ARSoft.Tools.Net
-  dll-path: ARSoft.Tools.Net\bin\${{ inputs.platform || 'x64'}}\${{ inputs.configuration || 'Production' }}\${{ inputs.framework || 'net8.0' }}
+  dll-path: bin\${{ inputs.platform || 'x64'}}\${{ inputs.configuration || 'Production' }}\${{ inputs.framework || 'net8.0' }}
 
 jobs:
   check_trigger:
