@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2017 Alexander Reinert
+// Copyright 2010..2023 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -34,9 +34,6 @@ namespace ARSoft.Tools.Net.Dns
 	public class Zone : ICollection<DnsRecordBase>
 	{
 		private static readonly SecureRandom _secureRandom = new SecureRandom(new CryptoApiRandomGenerator());
-
-		private static readonly Regex _commentRemoverRegex = new Regex(@"^(?<data>(\\\""|[^\""]|(?<!\\)\"".*?(?<!\\)\"")*?)(;.*)?$", RegexOptions.Compiled | RegexOptions.ExplicitCapture);
-		private static readonly Regex _lineSplitterRegex = new Regex("([^\\s\"]+)|\"(.*?(?<!\\\\))\"", RegexOptions.Compiled);
 
 		private readonly List<DnsRecordBase> _records;
 
@@ -109,7 +106,7 @@ namespace ARSoft.Tools.Net.Dns
 		{
 			List<DnsRecordBase> records = ParseRecords(reader, name, 0, new UnknownRecord(name, RecordType.Invalid, RecordClass.INet, 0, new byte[] { }));
 
-			SoaRecord soa = (SoaRecord) records.SingleOrDefault(x => x.RecordType == RecordType.Soa);
+			SoaRecord? soa = (SoaRecord?) records.SingleOrDefault(x => x.RecordType == RecordType.Soa);
 
 			if (soa != null)
 			{
@@ -129,46 +126,47 @@ namespace ARSoft.Tools.Net.Dns
 
 			while (!reader.EndOfStream)
 			{
-				string line = ReadRecordLine(reader);
+				var line = ReadRecordLine(reader);
 
 				if (!String.IsNullOrEmpty(line))
 				{
-					string[] parts = _lineSplitterRegex.Matches(line).Cast<Match>().Select(x => x.Groups.Cast<Group>().Last(g => g.Success).Value.FromMasterfileLabelRepresentation()).ToArray();
+					var parts = line.SplitWithQuoting(new[] { ' ', '\t' }, true, true).Select(x => x.FromMasterfileLabelRepresentation()).ToArray();
 
 					if (parts[0].Equals("$origin", StringComparison.InvariantCultureIgnoreCase))
 					{
-						origin = DomainName.ParseFromMasterfile(parts[1]);
+						if (parts.Length != 2)
+							throw new FormatException();
+
+						origin = DomainName.ParseFromMasterfile(parts[1], origin);
 					}
-					if (parts[0].Equals("$ttl", StringComparison.InvariantCultureIgnoreCase))
+					else if (parts[0].Equals("$ttl", StringComparison.InvariantCultureIgnoreCase))
 					{
+						if (parts.Length != 2)
+							throw new FormatException();
+
 						ttl = Int32.Parse(parts[1]);
 					}
-					if (parts[0].Equals("$include", StringComparison.InvariantCultureIgnoreCase))
+					else if (parts[0].Equals("$include", StringComparison.InvariantCultureIgnoreCase))
 					{
-						FileStream fileStream = reader.BaseStream as FileStream;
-
-						if (fileStream == null)
-							throw new NotSupportedException("Includes only supported when loading files");
+						if (reader.BaseStream is not FileStream fileStream)
+							throw new NotSupportedException("Includes are only supported when loading files");
 
 						// ReSharper disable once AssignNullToNotNullAttribute
-						string path = Path.Combine(new FileInfo(fileStream.Name).DirectoryName, parts[1]);
+						var path = Path.Combine(new FileInfo(fileStream!.Name).DirectoryName!, parts[1]);
 
-						DomainName includeOrigin = (parts.Length > 2) ? DomainName.ParseFromMasterfile(parts[2]) : origin;
+						var includeOrigin = (parts.Length > 2) ? DomainName.ParseFromMasterfile(parts[2], origin) : origin;
 
-						using (StreamReader includeReader = new StreamReader(path))
-						{
-							records.AddRange(ParseRecords(includeReader, includeOrigin, ttl, lastRecord));
-						}
+						using var includeReader = new StreamReader(path);
+						records.AddRange(ParseRecords(includeReader, includeOrigin, ttl, lastRecord));
 					}
 					else
 					{
-						string domainString;
+						string? domainString;
 						RecordType recordType;
 						RecordClass recordClass;
-						int recordTtl;
 						string[] rrData;
 
-						if (Int32.TryParse(parts[0], out recordTtl))
+						if (Int32.TryParse(parts[0], out var recordTtl))
 						{
 							// no domain, starts with ttl
 							if (RecordClassHelper.TryParseShortString(parts[1], out recordClass, false))
@@ -271,13 +269,9 @@ namespace ARSoft.Tools.Net.Dns
 						{
 							domain = origin;
 						}
-						else if (domainString.EndsWith("."))
-						{
-							domain = DomainName.ParseFromMasterfile(domainString);
-						}
 						else
 						{
-							domain = DomainName.ParseFromMasterfile(domainString) + origin;
+							domain = DomainName.ParseFromMasterfile(domainString, origin);
 						}
 
 						if (recordClass == RecordClass.Invalid)
@@ -299,20 +293,7 @@ namespace ARSoft.Tools.Net.Dns
 							ttl = recordTtl;
 						}
 
-						lastRecord = DnsRecordBase.Create(recordType);
-						lastRecord.RecordType = recordType;
-						lastRecord.Name = domain;
-						lastRecord.RecordClass = recordClass;
-						lastRecord.TimeToLive = recordTtl;
-
-						if ((rrData.Length > 0) && (rrData[0] == @"\#"))
-						{
-							lastRecord.ParseUnknownRecordData(rrData);
-						}
-						else
-						{
-							lastRecord.ParseRecordData(origin, rrData);
-						}
+						lastRecord = DnsRecordBase.ParseFromStringRepresentation(domain, recordType, recordClass, recordTtl, origin, rrData);
 
 						records.Add(lastRecord);
 					}
@@ -322,12 +303,15 @@ namespace ARSoft.Tools.Net.Dns
 			return records;
 		}
 
-		private static string ReadRecordLine(StreamReader reader)
+		private static string? ReadRecordLine(StreamReader reader)
 		{
-			string line = ReadLineWithoutComment(reader);
+			var line = ReadLineWithoutComment(reader);
+
+			if (line == null)
+				return null;
 
 			int bracketPos;
-			if ((bracketPos = line.IndexOf('(')) != -1)
+			if ((bracketPos = line.IndexOfWithQuoting('(')) != -1)
 			{
 				StringBuilder sb = new StringBuilder();
 
@@ -341,15 +325,18 @@ namespace ARSoft.Tools.Net.Dns
 
 					line = ReadLineWithoutComment(reader);
 
-					if ((bracketPos = line.IndexOf(')')) == -1)
+					if (line == null)
+						return null;
+
+					if ((bracketPos = line.IndexOfWithQuoting(')')) == -1)
 					{
 						sb.Append(line);
 					}
 					else
 					{
-						sb.Append(line.Substring(0, bracketPos));
+						sb.Append(line[..bracketPos]);
 						sb.Append(" ");
-						sb.Append(line.Substring(bracketPos + 1));
+						sb.Append(line[(bracketPos + 1)..]);
 						line = sb.ToString();
 						break;
 					}
@@ -359,11 +346,16 @@ namespace ARSoft.Tools.Net.Dns
 			return line;
 		}
 
-		private static string ReadLineWithoutComment(StreamReader reader)
+		internal static string? ReadLineWithoutComment(StreamReader reader)
 		{
-			string line = reader.ReadLine();
-			// ReSharper disable once AssignNullToNotNullAttribute
-			return _commentRemoverRegex.Match(line).Groups["data"].Value;
+			string? line = reader.ReadLine();
+
+			if (line == null)
+				return null;
+
+			var index = line.IndexOfWithQuoting(';');
+
+			return index < 0 ? line : line[..index];
 		}
 
 		/// <summary>
@@ -377,7 +369,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="nsec3Salt">The salt when NSEC3 is used</param>
 		/// <param name="nsec3OptOut">true, of NSEC3 OptOut should be used for delegations without DS record</param>
 		/// <returns>A signed zone</returns>
-		public Zone Sign(List<DnsKeyRecord> keys, DateTime inception, DateTime expiration, NSec3HashAlgorithm nsec3Algorithm = 0, int nsec3Iterations = 10, byte[] nsec3Salt = null, bool nsec3OptOut = false)
+		public Zone Sign(List<DnsKeyRecord> keys, DateTime inception, DateTime expiration, NSec3HashAlgorithm nsec3Algorithm = 0, int nsec3Iterations = 10, byte[]? nsec3Salt = null, bool nsec3OptOut = false)
 		{
 			if ((keys == null) || (keys.Count == 0))
 				throw new Exception("No DNS Keys were provided");
@@ -436,6 +428,7 @@ namespace ARSoft.Tools.Net.Dns
 					{
 						res.Add(new RrSigRecord(records, key, inception, expiration));
 					}
+
 					if (records[0].RecordType == RecordType.DnsKey)
 					{
 						foreach (var key in keySigningKeys)
@@ -461,7 +454,7 @@ namespace ARSoft.Tools.Net.Dns
 			return res;
 		}
 
-		private Zone SignWithNSec3(DateTime inception, DateTime expiration, List<DnsKeyRecord> zoneSigningKeys, List<DnsKeyRecord> keySigningKeys, NSec3HashAlgorithm nsec3Algorithm, int nsec3Iterations, byte[] nsec3Salt, bool nsec3OptOut)
+		private Zone SignWithNSec3(DateTime inception, DateTime expiration, List<DnsKeyRecord> zoneSigningKeys, List<DnsKeyRecord> keySigningKeys, NSec3HashAlgorithm nsec3Algorithm, int nsec3Iterations, byte[]? nsec3Salt, bool nsec3OptOut)
 		{
 			var soaRecord = _records.OfType<SoaRecord>().First();
 			var subZoneNameserver = _records.Where(x => (x.RecordType == RecordType.Ns) && (x.Name != Name)).ToList();
@@ -471,7 +464,7 @@ namespace ARSoft.Tools.Net.Dns
 				unsignedRecords = unsignedRecords.Union(subZoneNameserver.Where(x => !_records.Any(y => (y.RecordType == RecordType.Ds) && (y.Name == x.Name)))).ToList(); // delegations without DS record
 			var recordsByName = _records.Except(unsignedRecords).Union(zoneSigningKeys).Union(keySigningKeys).GroupBy(x => x.Name).Select(x => new Tuple<DomainName, List<DnsRecordBase>>(x.Key, x.OrderBy(y => y.RecordType == RecordType.Soa ? -1 : (int) y.RecordType).ToList())).OrderBy(x => x.Item1).ToList();
 
-			byte nsec3RecordFlags = (byte) (nsec3OptOut ? 1 : 0);
+			NSec3Flags nsec3RecordFlags = nsec3OptOut ? NSec3Flags.OptOut : NSec3Flags.None;
 
 			Zone res = new Zone(Name, Count * 3);
 			List<NSec3Record> nSec3Records = new List<NSec3Record>(Count);
@@ -506,6 +499,7 @@ namespace ARSoft.Tools.Net.Dns
 					{
 						res.Add(new RrSigRecord(records, key, inception, expiration));
 					}
+
 					if (records[0].RecordType == RecordType.DnsKey)
 					{
 						foreach (var key in keySigningKeys)
@@ -515,18 +509,18 @@ namespace ARSoft.Tools.Net.Dns
 					}
 				}
 
-				byte[] hash = recordsByName[i].Item1.GetNSec3Hash(nsec3Algorithm, nsec3Iterations, nsec3Salt);
-				nSec3Records.Add(new NSec3Record(DomainName.ParseFromMasterfile(hash.ToBase32HexString()) + Name, soaRecord.RecordClass, soaRecord.NegativeCachingTTL, nsec3Algorithm, nsec3RecordFlags, (ushort) nsec3Iterations, nsec3Salt, hash, recordTypes));
+				var nsec3Hash = recordsByName[i].Item1.GetNSec3Hash(nsec3Algorithm, nsec3Iterations, nsec3Salt);
+				nSec3Records.Add(new NSec3Record(new DomainName(nsec3Hash.ToBase32String(), Name), soaRecord.RecordClass, soaRecord.NegativeCachingTTL, nsec3Algorithm, nsec3RecordFlags, (ushort) nsec3Iterations, nsec3Salt, nsec3Hash, recordTypes));
 
 				allNames.Add(currentName);
 				for (int j = currentName.LabelCount - Name.LabelCount; j > 0; j--)
 				{
-					DomainName possibleNonTerminal = currentName.GetParentName(j);
+					var possibleNonTerminal = currentName.GetParentName(j);
 
 					if (!allNames.Contains(possibleNonTerminal))
 					{
-						hash = possibleNonTerminal.GetNSec3Hash(nsec3Algorithm, nsec3Iterations, nsec3Salt);
-						nSec3Records.Add(new NSec3Record(DomainName.ParseFromMasterfile(hash.ToBase32HexString()) + Name, soaRecord.RecordClass, soaRecord.NegativeCachingTTL, nsec3Algorithm, nsec3RecordFlags, (ushort) nsec3Iterations, nsec3Salt, hash, new List<RecordType>()));
+						nsec3Hash = possibleNonTerminal.GetNSec3Hash(nsec3Algorithm, nsec3Iterations, nsec3Salt);
+						nSec3Records.Add(new NSec3Record(new DomainName(nsec3Hash.ToBase32String(), Name), soaRecord.RecordClass, soaRecord.NegativeCachingTTL, nsec3Algorithm, nsec3RecordFlags, (ushort) nsec3Iterations, nsec3Salt, nsec3Hash, new List<RecordType>()));
 
 						allNames.Add(possibleNonTerminal);
 					}

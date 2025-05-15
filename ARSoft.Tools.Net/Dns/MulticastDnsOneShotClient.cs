@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2017 Alexander Reinert
+// Copyright 2010..2023 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -28,50 +28,26 @@ namespace ARSoft.Tools.Net.Dns
 {
 	/// <summary>
 	///   Provides a one/shot client for querying Multicast DNS as defined in
-	///   <see
-	///     cref="!:http://tools.ietf.org/html/rfc6762">
-	///     RFC 6762
-	///   </see>
-	///   .
+	///   <a href="https://www.rfc-editor.org/rfc/rfc6762.html">RFC 6762</a>.
 	/// </summary>
 	public sealed class MulticastDnsOneShotClient : DnsClientBase
 	{
+		public const int DEFAULT_PORT = 5353;
+
 		private static readonly List<IPAddress> _addresses = new List<IPAddress> { IPAddress.Parse("FF02::FB"), IPAddress.Parse("224.0.0.251") };
 
 		/// <summary>
 		///   Provides a new instance with a timeout of 2.5 seconds
 		/// </summary>
 		public MulticastDnsOneShotClient()
-			: this(2500) {}
+			: this(2500) { }
 
 		/// <summary>
 		///   Provides a new instance with a custom timeout
 		/// </summary>
 		/// <param name="queryTimeout"> Query timeout in milliseconds </param>
 		public MulticastDnsOneShotClient(int queryTimeout)
-			: base(_addresses, queryTimeout, 5353)
-		{
-			int maximumMessageSize = 0;
-
-			try
-			{
-				maximumMessageSize = NetworkInterface.GetAllNetworkInterfaces()
-					.Where(n => n.SupportsMulticast && (n.NetworkInterfaceType != NetworkInterfaceType.Loopback) && (n.OperationalStatus == OperationalStatus.Up) && (n.Supports(NetworkInterfaceComponent.IPv4)))
-					.Select(n => n.GetIPProperties())
-					.Min(p => Math.Min(p.GetIPv4Properties().Mtu, p.GetIPv6Properties().Mtu));
-			}
-			catch
-			{
-				// ignored
-			}
-
-			MaximumQueryMessageSize = Math.Max(512, maximumMessageSize);
-
-			IsUdpEnabled = true;
-			IsTcpEnabled = false;
-		}
-
-		protected override int MaximumQueryMessageSize { get; }
+			: base(_addresses, queryTimeout, new IClientTransport[] { new MulticastClientTransport(DEFAULT_PORT) }, true) { }
 
 		/// <summary>
 		///   Queries for specified records.
@@ -81,8 +57,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// <returns> All available responses on the local network </returns>
 		public List<MulticastDnsMessage> Resolve(DomainName name, RecordType recordType = RecordType.Any)
 		{
-			if (name == null)
-				throw new ArgumentNullException(nameof(name), "Name must be provided");
+			_ = name ?? throw new ArgumentNullException(nameof(name), "Name must be provided");
 
 			MulticastDnsMessage message = new MulticastDnsMessage { IsQuery = true, OperationCode = OperationCode.Query };
 			message.Questions.Add(new DnsQuestion(name, recordType, RecordClass.INet));
@@ -99,8 +74,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// <returns> All available responses on the local network </returns>
 		public Task<List<MulticastDnsMessage>> ResolveAsync(DomainName name, RecordType recordType = RecordType.Any, CancellationToken token = default(CancellationToken))
 		{
-			if (name == null)
-				throw new ArgumentNullException(nameof(name), "Name must be provided");
+			_ = name ?? throw new ArgumentNullException(nameof(name), "Name must be provided");
 
 			MulticastDnsMessage message = new MulticastDnsMessage { IsQuery = true, OperationCode = OperationCode.Query };
 			message.Questions.Add(new DnsQuestion(name, recordType, RecordClass.INet));

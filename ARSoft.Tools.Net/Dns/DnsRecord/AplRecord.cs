@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2017 Alexander Reinert
+// Copyright 2010..2023 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -29,7 +29,7 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>Address prefixes record</para>
 	///   <para>
 	///     Defined in
-	///     <see cref="!:http://tools.ietf.org/html/rfc3123">RFC 3123</see>
+	///     <a href="https://www.rfc-editor.org/rfc/rfc3123.html">RFC 3123</a>.
 	///   </para>
 	/// </summary>
 	public class AplRecord : DnsRecordBase
@@ -40,7 +40,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>IPv4</para>
 			///   <para>
 			///     Defined in
-			///     <see cref="!:http://tools.ietf.org/html/rfc3123">RFC 3123</see>
+			///     <a href="https://www.rfc-editor.org/rfc/rfc3123.html">RFC 3123</a>.
 			///   </para>
 			/// </summary>
 			IpV4 = 1,
@@ -49,7 +49,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>IPv6</para>
 			///   <para>
 			///     Defined in
-			///     <see cref="!:http://tools.ietf.org/html/rfc3123">RFC 3123</see>
+			///     <a href="https://www.rfc-editor.org/rfc/rfc3123.html">RFC 3123</a>.
 			///   </para>
 			/// </summary>
 			IpV6 = 2,
@@ -126,7 +126,40 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		public List<AddressPrefix> Prefixes { get; private set; }
 
-		internal AplRecord() {}
+		internal AplRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
+			: base(name, recordType, recordClass, timeToLive)
+		{
+			var endPosition = currentPosition + length;
+
+			Prefixes = new List<AddressPrefix>();
+			while (currentPosition < endPosition)
+			{
+				var family = (Family) DnsMessageBase.ParseUShort(resultData, ref currentPosition);
+				var prefix = resultData[currentPosition++];
+
+				var addressLength = resultData[currentPosition++];
+				var isNegated = false;
+				if (addressLength > 127)
+				{
+					isNegated = true;
+					addressLength -= 128;
+				}
+
+				var addressData = new byte[(family == Family.IpV4) ? 4 : 16];
+				DnsMessageBase.ParseByteData(resultData, ref currentPosition, addressLength).CopyTo(addressData, 0);
+
+				Prefixes.Add(new AddressPrefix(isNegated, new IPAddress(addressData), prefix));
+			}
+		}
+
+		internal AplRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
+			: base(name, recordType, recordClass, timeToLive)
+		{
+			if (stringRepresentation.Length == 0)
+				throw new FormatException();
+
+			Prefixes = stringRepresentation.Select(AddressPrefix.Parse).ToList();
+		}
 
 		/// <summary>
 		///   Creates a new instance of the AplRecord class
@@ -140,40 +173,6 @@ namespace ARSoft.Tools.Net.Dns
 			Prefixes = prefixes ?? new List<AddressPrefix>();
 		}
 
-		internal override void ParseRecordData(byte[] resultData, int currentPosition, int length)
-		{
-			int endPosition = currentPosition + length;
-
-			Prefixes = new List<AddressPrefix>();
-			while (currentPosition < endPosition)
-			{
-				Family family = (Family) DnsMessageBase.ParseUShort(resultData, ref currentPosition);
-				byte prefix = resultData[currentPosition++];
-
-				byte addressLength = resultData[currentPosition++];
-				bool isNegated = false;
-				if (addressLength > 127)
-				{
-					isNegated = true;
-					addressLength -= 128;
-				}
-
-				byte[] addressData = new byte[(family == Family.IpV4) ? 4 : 16];
-				Buffer.BlockCopy(resultData, currentPosition, addressData, 0, addressLength);
-				currentPosition += addressLength;
-
-				Prefixes.Add(new AddressPrefix(isNegated, new IPAddress(addressData), prefix));
-			}
-		}
-
-		internal override void ParseRecordData(DomainName origin, string[] stringRepresentation)
-		{
-			if (stringRepresentation.Length == 0)
-				throw new FormatException();
-
-			Prefixes = stringRepresentation.Select(AddressPrefix.Parse).ToList();
-		}
-
 		internal override string RecordDataToString()
 		{
 			return String.Join(" ", Prefixes.Select(p => p.ToString()));
@@ -181,7 +180,7 @@ namespace ARSoft.Tools.Net.Dns
 
 		protected internal override int MaximumRecordDataLength => Prefixes.Count * 20;
 
-		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
+		protected internal override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
 		{
 			foreach (AddressPrefix addressPrefix in Prefixes)
 			{
@@ -199,6 +198,7 @@ namespace ARSoft.Tools.Net.Dns
 					if (addressData[length - 1] != 0)
 						break;
 				}
+
 				messageData[currentPosition++] |= (byte) length;
 				DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, addressData, length);
 			}

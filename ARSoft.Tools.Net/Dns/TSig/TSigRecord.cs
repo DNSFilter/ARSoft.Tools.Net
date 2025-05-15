@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2017 Alexander Reinert
+// Copyright 2010..2023 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -16,10 +16,8 @@
 // limitations under the License.
 #endregion
 
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using Org.BouncyCastle.Crypto.Macs;
+using Org.BouncyCastle.Crypto.Parameters;
 
 namespace ARSoft.Tools.Net.Dns
 {
@@ -27,12 +25,16 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>Transaction signature record</para>
 	///   <para>
 	///     Defined in
-	///     <see cref="!:http://tools.ietf.org/html/rfc2845">RFC 2845</see>
+	///     <a href="https://www.rfc-editor.org/rfc/rfc2845.html">RFC 2845</a>,
+	///     <a href="https://www.rfc-editor.org/rfc/rfc4635.html">RFC 4635</a>
+	///     and <a href="https://www.rfc-editor.org/rfc/rfc8945.html">RFC 8945</a>
 	///   </para>
 	/// </summary>
 	// ReSharper disable once InconsistentNaming
 	public class TSigRecord : DnsRecordBase
 	{
+		private readonly int _startPosition;
+
 		/// <summary>
 		///   Algorithm of the key
 		/// </summary>
@@ -71,14 +73,33 @@ namespace ARSoft.Tools.Net.Dns
 		/// <summary>
 		///   Binary data of the key
 		/// </summary>
-		public byte[] KeyData { get; internal set; }
+		public byte[]? KeyData { get; internal set; }
 
 		/// <summary>
 		///   Result of validation of record
 		/// </summary>
 		public ReturnCode ValidationResult { get; internal set; }
 
-		internal TSigRecord() {}
+		internal TSigRecord(int startPosition, DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
+			: base(name, recordType, recordClass, timeToLive)
+		{
+			_startPosition = startPosition;
+			Algorithm = TSigAlgorithmHelper.GetAlgorithmByName(DnsMessageBase.ParseDomainName(resultData, ref currentPosition));
+			TimeSigned = ParseDateTime(resultData, ref currentPosition);
+			Fudge = TimeSpan.FromSeconds(DnsMessageBase.ParseUShort(resultData, ref currentPosition));
+			int macSize = DnsMessageBase.ParseUShort(resultData, ref currentPosition);
+			Mac = DnsMessageBase.ParseByteData(resultData, ref currentPosition, macSize);
+			OriginalID = DnsMessageBase.ParseUShort(resultData, ref currentPosition);
+			Error = (ReturnCode) DnsMessageBase.ParseUShort(resultData, ref currentPosition);
+			int otherDataSize = DnsMessageBase.ParseUShort(resultData, ref currentPosition);
+			OtherData = DnsMessageBase.ParseByteData(resultData, ref currentPosition, otherDataSize);
+		}
+
+		internal TSigRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
+			: base(name, recordType, recordClass, timeToLive)
+		{
+			throw new NotSupportedException();
+		}
 
 		/// <summary>
 		///   Creates a new instance of the TSigRecord class
@@ -91,7 +112,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="error"> Error field </param>
 		/// <param name="otherData"> Binary other data </param>
 		/// <param name="keyData"> Binary data of the key </param>
-		public TSigRecord(DomainName name, TSigAlgorithm algorithm, DateTime timeSigned, TimeSpan fudge, ushort originalID, ReturnCode error, byte[] otherData, byte[] keyData)
+		public TSigRecord(DomainName name, TSigAlgorithm algorithm, DateTime timeSigned, TimeSpan fudge, ushort originalID, ReturnCode error, byte[]? otherData, byte[]? keyData)
 			: base(name, RecordType.TSig, RecordClass.Any, 0)
 		{
 			Algorithm = algorithm;
@@ -104,27 +125,9 @@ namespace ARSoft.Tools.Net.Dns
 			KeyData = keyData;
 		}
 
-		internal override void ParseRecordData(byte[] resultData, int startPosition, int length)
-		{
-			Algorithm = TSigAlgorithmHelper.GetAlgorithmByName(DnsMessageBase.ParseDomainName(resultData, ref startPosition));
-			TimeSigned = ParseDateTime(resultData, ref startPosition);
-			Fudge = TimeSpan.FromSeconds(DnsMessageBase.ParseUShort(resultData, ref startPosition));
-			int macSize = DnsMessageBase.ParseUShort(resultData, ref startPosition);
-			Mac = DnsMessageBase.ParseByteData(resultData, ref startPosition, macSize);
-			OriginalID = DnsMessageBase.ParseUShort(resultData, ref startPosition);
-			Error = (ReturnCode) DnsMessageBase.ParseUShort(resultData, ref startPosition);
-			int otherDataSize = DnsMessageBase.ParseUShort(resultData, ref startPosition);
-			OtherData = DnsMessageBase.ParseByteData(resultData, ref startPosition, otherDataSize);
-		}
-
-		internal override void ParseRecordData(DomainName origin, string[] stringRepresentation)
-		{
-			throw new NotSupportedException();
-		}
-
 		internal override string RecordDataToString()
 		{
-			return TSigAlgorithmHelper.GetDomainName(Algorithm)
+			return TSigAlgorithmHelper.GetDomainName(Algorithm).ToString(false)
 			       + " " + (int) (TimeSigned - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds
 			       + " " + (ushort) Fudge.TotalSeconds
 			       + " " + Mac.Length
@@ -135,19 +138,19 @@ namespace ARSoft.Tools.Net.Dns
 			       + " " + OtherData.ToBase64String();
 		}
 
-		protected internal override int MaximumRecordDataLength => TSigAlgorithmHelper.GetDomainName(Algorithm).MaximumRecordDataLength + 18 + TSigAlgorithmHelper.GetHashSize(Algorithm) + OtherData.Length;
+		protected internal override int MaximumRecordDataLength => TSigAlgorithmHelper.GetDomainName(Algorithm).MaximumRecordDataLength + 18 + TSigAlgorithmHelper.GetMaxHashSize(Algorithm) + OtherData.Length;
 
-		internal void Encode(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, byte[] mac)
+		internal void Encode(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, byte[] mac)
 		{
-			EncodeRecordHeader(messageData, offset, ref currentPosition, domainNames, false);
-			int recordDataOffset = currentPosition + 2;
-			EncodeRecordData(messageData, offset, ref recordDataOffset, mac);
-			EncodeRecordLength(messageData, offset, ref currentPosition, domainNames, recordDataOffset);
+			EncodeRecordHeader(messageData, ref currentPosition, domainNames, false);
+			var recordDataOffset = currentPosition + 2;
+			EncodeRecordData(messageData, ref recordDataOffset, mac);
+			EncodeRecordLength(messageData, ref currentPosition, recordDataOffset);
 		}
 
-		private void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, byte[] mac)
+		private void EncodeRecordData(IList<byte> messageData, ref int currentPosition, byte[] mac)
 		{
-			DnsMessageBase.EncodeDomainName(messageData, offset, ref currentPosition, TSigAlgorithmHelper.GetDomainName(Algorithm), null, false);
+			DnsMessageBase.EncodeDomainName(messageData, ref currentPosition, TSigAlgorithmHelper.GetDomainName(Algorithm), null, false);
 			EncodeDateTime(messageData, ref currentPosition, TimeSigned);
 			DnsMessageBase.EncodeUShort(messageData, ref currentPosition, (ushort) Fudge.TotalSeconds);
 			DnsMessageBase.EncodeUShort(messageData, ref currentPosition, (ushort) mac.Length);
@@ -158,12 +161,12 @@ namespace ARSoft.Tools.Net.Dns
 			DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, OtherData);
 		}
 
-		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
+		protected internal override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
 		{
-			EncodeRecordData(messageData, offset, ref currentPosition, Mac);
+			EncodeRecordData(messageData, ref currentPosition, Mac);
 		}
 
-		internal static void EncodeDateTime(byte[] buffer, ref int currentPosition, DateTime value)
+		internal static void EncodeDateTime(IList<byte> buffer, ref int currentPosition, DateTime value)
 		{
 			long timeStamp = (long) (value.ToUniversalTime() - new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc)).TotalSeconds;
 
@@ -187,7 +190,7 @@ namespace ARSoft.Tools.Net.Dns
 			}
 		}
 
-		private static DateTime ParseDateTime(byte[] buffer, ref int currentPosition)
+		private static DateTime ParseDateTime(IList<byte> buffer, ref int currentPosition)
 		{
 			long timeStamp;
 
@@ -201,6 +204,87 @@ namespace ARSoft.Tools.Net.Dns
 			}
 
 			return new DateTime(1970, 1, 1, 0, 0, 0, DateTimeKind.Utc).AddSeconds(timeStamp).ToLocalTime();
+		}
+
+		internal ReturnCode ValidateTSig(IList<byte> resultData, int additionalRecordCount, DnsServer.SelectTsigKey? tsigKeySelector, byte[]? originalMac)
+		{
+			byte[]? keyData;
+			if (this.Algorithm == TSigAlgorithm.Unknown)
+				return ReturnCode.BadAlg;
+
+			if (this.Mac.Length == 0)
+			{
+				return ReturnCode.BadSig;
+			}
+
+			var hashAlgorithm = TSigAlgorithmHelper.GetHashAlgorithm(this.Algorithm);
+			if (hashAlgorithm == null)
+				return ReturnCode.BadAlg;
+
+			if ((this.Mac.Length > hashAlgorithm.GetMacSize()))
+				return ReturnCode.FormatError;
+
+			if ((this.Mac.Length < 10) || (this.Mac.Length < hashAlgorithm.GetMacSize() / 2))
+				return ReturnCode.FormatError;
+
+			if ((tsigKeySelector == null) || ((keyData = tsigKeySelector(this.Algorithm, this.Mac.Length < hashAlgorithm.GetMacSize(), this.Name)) == null))
+				return ReturnCode.BadKey;
+
+			// maxLength for the buffer to validate: Original (unsigned) dns message and encoded TSigOptions
+			// because of compression of keyname, the size of the signed message can not be used
+			var maxLength = this._startPosition + this.MaximumLength;
+			if (originalMac != null)
+			{
+				// add length of mac on responses. MacSize not neccessary, this field is allready included in the size of the tsig options
+				maxLength += originalMac.Length;
+			}
+
+			byte[] validationBuffer = new byte[maxLength];
+
+			int currentPosition = 0;
+
+			// original mac if neccessary
+			if ((originalMac != null) && (originalMac.Length > 0))
+			{
+				DnsMessageBase.EncodeUShort(validationBuffer, ref currentPosition, (ushort) originalMac.Length);
+				DnsMessageBase.EncodeByteArray(validationBuffer, ref currentPosition, originalMac);
+			}
+
+			int messageStartPosition = currentPosition;
+
+			// original unsiged buffer
+			DnsMessageBase.EncodeByteList(validationBuffer, ref currentPosition, resultData, 0, _startPosition);
+
+			// update original transaction id and ar count in message
+			DnsMessageBase.EncodeUShort(validationBuffer, messageStartPosition, this.OriginalID);
+			DnsMessageBase.EncodeUShort(validationBuffer, messageStartPosition + 10, (ushort) additionalRecordCount);
+
+			// TSig Variables
+			DnsMessageBase.EncodeDomainName(validationBuffer, ref currentPosition, this.Name, null, false);
+			DnsMessageBase.EncodeUShort(validationBuffer, ref currentPosition, (ushort) this.RecordClass);
+			DnsMessageBase.EncodeInt(validationBuffer, ref currentPosition, (ushort) this.TimeToLive);
+			DnsMessageBase.EncodeDomainName(validationBuffer, ref currentPosition, TSigAlgorithmHelper.GetDomainName(this.Algorithm), null, false);
+			TSigRecord.EncodeDateTime(validationBuffer, ref currentPosition, this.TimeSigned);
+			DnsMessageBase.EncodeUShort(validationBuffer, ref currentPosition, (ushort) this.Fudge.TotalSeconds);
+			DnsMessageBase.EncodeUShort(validationBuffer, ref currentPosition, (ushort) this.Error);
+			DnsMessageBase.EncodeUShort(validationBuffer, ref currentPosition, (ushort) this.OtherData.Length);
+			DnsMessageBase.EncodeByteArray(validationBuffer, ref currentPosition, this.OtherData);
+
+			var hash = new byte[hashAlgorithm.GetMacSize()];
+
+			hashAlgorithm.Init(new KeyParameter(keyData));
+			hashAlgorithm.BlockUpdate(validationBuffer, 0, currentPosition);
+			hashAlgorithm.DoFinal(hash, 0);
+
+			if (!hash.Take(this.Mac.Length).SequenceEqual(this.Mac))
+				return ReturnCode.BadSig;
+
+			if (((this.TimeSigned - this.Fudge) > DateTime.Now) || ((this.TimeSigned + this.Fudge) < DateTime.Now))
+				return ReturnCode.BadTime;
+
+			this.KeyData = keyData;
+
+			return ReturnCode.NoError;
 		}
 	}
 }

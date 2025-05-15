@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2017 Alexander Reinert
+// Copyright 2010..2023 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -42,52 +42,39 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		public static DnsClient Default { get; private set; }
 
-		/// <summary>
-		///   Gets or sets a value indicationg whether queries can be sent using UDP.
-		/// </summary>
-		public new bool IsUdpEnabled
-		{
-			get { return base.IsUdpEnabled; }
-			set { base.IsUdpEnabled = value; }
-		}
-
-		/// <summary>
-		///   Gets or sets a value indicationg whether queries can be sent using TCP.
-		/// </summary>
-		public new bool IsTcpEnabled
-		{
-			get { return base.IsTcpEnabled; }
-			set { base.IsTcpEnabled = value; }
-		}
-
 		static DnsClient()
 		{
 			Default = new DnsClient(GetLocalConfiguredDnsServers(), 10000) { IsResponseValidationEnabled = true };
 		}
 
-        /// <summary>
-        ///   Provides a new instance with custom dns server and query timeout
-        /// </summary>
-        /// <param name="dnsServer"> The IPAddress of the dns server to use </param>
-        /// <param name="queryTimeout"> Query timeout in milliseconds </param>
-        /// <param name="port"> Server port </param>
-        public DnsClient(IPAddress dnsServer, int queryTimeout, int port = 53)
-			: this(new List<IPAddress> { dnsServer }, queryTimeout, port) {}
+		/// <summary>
+		///   Provides a new instance with custom dns server and query timeout
+		/// </summary>
+		/// <param name="dnsServer"> The IPAddress of the dns server to use </param>
+		/// <param name="queryTimeout"> Query timeout in milliseconds </param>
+		public DnsClient(IPAddress dnsServer, int queryTimeout)
+			: this(new List<IPAddress> { dnsServer }, queryTimeout) { }
 
-        /// <summary>
-        ///   Provides a new instance with custom dns servers and query timeout
-        /// </summary>
-        /// <param name="dnsServers"> The IPAddresses of the dns servers to use </param>
-        /// <param name="queryTimeout"> Query timeout in milliseconds </param>
-        /// <param name="port"> Server port </param>
-        public DnsClient(IEnumerable<IPAddress> dnsServers, int queryTimeout, int port = 53)
-			: base(dnsServers, queryTimeout, port)
-		{
-			IsUdpEnabled = true;
-			IsTcpEnabled = true;
-		}
+		/// <summary>
+		///   Provides a new instance with custom dns servers and query timeout
+		/// </summary>
+		/// <param name="dnsServers"> The IPAddresses of the dns servers to use </param>
+		/// <param name="queryTimeout"> Query timeout in milliseconds </param>
+		public DnsClient(IEnumerable<IPAddress> dnsServers, int queryTimeout = 10000)
+			: base(dnsServers, queryTimeout, new IClientTransport[] { new UdpClientTransport(), new TcpClientTransport() }, true) { }
 
-		protected override int MaximumQueryMessageSize => 512;
+		/// <summary>
+		///   Provides a new instance with custom dns servers and query timeout
+		/// </summary>
+		/// <param name="dnsServers"> The IPAddresses of the dns servers to use </param>
+		/// <param name="transports"> The transports which is used </param>
+		/// <param name="disposeTransport">
+		///   A value indicating, if the transports should be disposed when the DnsClient instance is
+		///   disposed
+		/// </param>
+		/// <param name="queryTimeout"> Query timeout in milliseconds </param>
+		public DnsClient(IEnumerable<IPAddress> dnsServers, IClientTransport[] transports, bool disposeTransport = false, int queryTimeout = 10000)
+			: base(dnsServers, queryTimeout, transports, disposeTransport) { }
 
 		/// <summary>
 		///   Queries a dns server for specified records.
@@ -97,10 +84,9 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="recordClass"> Class the should be queried </param>
 		/// <param name="options"> Options for the query </param>
 		/// <returns> The complete response of the dns server </returns>
-		public DnsMessage Resolve(DomainName name, RecordType recordType = RecordType.A, RecordClass recordClass = RecordClass.INet, DnsQueryOptions options = null)
+		public DnsMessage? Resolve(DomainName name, RecordType recordType = RecordType.A, RecordClass recordClass = RecordClass.INet, DnsQueryOptions? options = null)
 		{
-			if (name == null)
-				throw new ArgumentNullException(nameof(name), "Name must be provided");
+			_ = name ?? throw new ArgumentNullException(nameof(name), "Name must be provided");
 
 			DnsMessage message = new DnsMessage() { IsQuery = true, OperationCode = OperationCode.Query, IsRecursionDesired = true, IsEDnsEnabled = true };
 
@@ -130,10 +116,9 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="options"> Options for the query </param>
 		/// <param name="token"> The token to monitor cancellation requests </param>
 		/// <returns> The complete response of the dns server </returns>
-		public Task<DnsMessage> ResolveAsync(DomainName name, RecordType recordType = RecordType.A, RecordClass recordClass = RecordClass.INet, DnsQueryOptions options = null, CancellationToken token = default(CancellationToken))
+		public Task<DnsMessage?> ResolveAsync(DomainName name, RecordType recordType = RecordType.A, RecordClass recordClass = RecordClass.INet, DnsQueryOptions? options = null, CancellationToken token = default(CancellationToken))
 		{
-			if (name == null)
-				throw new ArgumentNullException(nameof(name), "Name must be provided");
+			_ = name ?? throw new ArgumentNullException(nameof(name), "Name must be provided");
 
 			DnsMessage message = new DnsMessage() { IsQuery = true, OperationCode = OperationCode.Query, IsRecursionDesired = true, IsEDnsEnabled = true };
 
@@ -159,10 +144,9 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		/// <param name="message"> Message, that should be send to the dns server </param>
 		/// <returns> The complete response of the dns server </returns>
-		public DnsMessage SendMessage(DnsMessage message)
+		public DnsMessage? SendMessage(DnsMessage message)
 		{
-			if (message == null)
-				throw new ArgumentNullException(nameof(message));
+			_ = message ?? throw new ArgumentNullException(nameof(message));
 
 			if ((message.Questions == null) || (message.Questions.Count == 0))
 				throw new ArgumentException("At least one question must be provided", nameof(message));
@@ -176,10 +160,9 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="message"> Message, that should be send to the dns server </param>
 		/// <param name="token"> The token to monitor cancellation requests </param>
 		/// <returns> The complete response of the dns server </returns>
-		public Task<DnsMessage> SendMessageAsync(DnsMessage message, CancellationToken token = default(CancellationToken))
+		public Task<DnsMessage?> SendMessageAsync(DnsMessage message, CancellationToken token = default(CancellationToken))
 		{
-			if (message == null)
-				throw new ArgumentNullException(nameof(message));
+			_ = message ?? throw new ArgumentNullException(nameof(message));
 
 			if ((message.Questions == null) || (message.Questions.Count == 0))
 				throw new ArgumentException("At least one question must be provided", nameof(message));
@@ -192,13 +175,10 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		/// <param name="message"> Update, that should be send to the dns server </param>
 		/// <returns> The complete response of the dns server </returns>
-		public DnsUpdateMessage SendUpdate(DnsUpdateMessage message)
+		public DnsUpdateMessage? SendUpdate(DnsUpdateMessage message)
 		{
-			if (message == null)
-				throw new ArgumentNullException(nameof(message));
-
-			if (message.ZoneName == null)
-				throw new ArgumentException("Zone name must be provided", nameof(message));
+			_ = message ?? throw new ArgumentNullException(nameof(message));
+			_ = message.ZoneName ?? throw new ArgumentNullException("Zone name must be provided", nameof(message));
 
 			return SendMessage(message);
 		}
@@ -209,13 +189,10 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="message"> Update, that should be send to the dns server </param>
 		/// <param name="token"> The token to monitor cancellation requests </param>
 		/// <returns> The complete response of the dns server </returns>
-		public Task<DnsUpdateMessage> SendUpdateAsync(DnsUpdateMessage message, CancellationToken token = default(CancellationToken))
+		public Task<DnsUpdateMessage?> SendUpdateAsync(DnsUpdateMessage message, CancellationToken token = default(CancellationToken))
 		{
-			if (message == null)
-				throw new ArgumentNullException(nameof(message));
-
-			if (message.ZoneName == null)
-				throw new ArgumentException("Zone name must be provided", nameof(message));
+			_ = message ?? throw new ArgumentNullException(nameof(message));
+			_ = message.ZoneName ?? throw new ArgumentNullException("Zone name must be provided", nameof(message));
 
 			return SendMessageAsync(message, token);
 		}
@@ -223,7 +200,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// <summary>
 		///   Returns a list of the local configured DNS servers.
 		/// </summary>
-		/// <returns></returns>
+		/// <returns>A list of the local configured DNS servers</returns>
 		public static List<IPAddress> GetLocalConfiguredDnsServers()
 		{
 			List<IPAddress> res = new List<IPAddress>();
@@ -268,7 +245,7 @@ namespace ARSoft.Tools.Net.Dns
 				{
 					using (StreamReader reader = File.OpenText("/etc/resolv.conf"))
 					{
-						string line;
+						string? line;
 						while ((line = reader.ReadLine()) != null)
 						{
 							int commentStart = line.IndexOf('#');
@@ -278,7 +255,7 @@ namespace ARSoft.Tools.Net.Dns
 							}
 
 							string[] lineData = line.Split(new[] { ' ', '\t' }, StringSplitOptions.RemoveEmptyEntries);
-							IPAddress dns;
+							IPAddress? dns;
 							if ((lineData.Length == 2) && (lineData[0] == "nameserver") && (IPAddress.TryParse(lineData[1], out dns)))
 							{
 								res.Add(dns);

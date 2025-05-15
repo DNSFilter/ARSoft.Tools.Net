@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2017 Alexander Reinert
+// Copyright 2010..2023 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,7 +27,7 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>Name server ID option</para>
 	///   <para>
 	///     Defined in
-	///     <see cref="!:http://tools.ietf.org/html/rfc5001">RFC 5001</see>
+	///     <a href="https://www.rfc-editor.org/rfc/rfc5001.html">RFC 5001</a>.
 	///   </para>
 	/// </summary>
 	public class NsIdOption : EDnsOptionBase
@@ -37,26 +37,25 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		public byte[] Payload { get; private set; }
 
-		internal NsIdOption()
-			: base(EDnsOptionType.NsId) {}
-
-		/// <summary>
-		///   Creates a new instance of the NsIdOption class
-		/// </summary>
-		public NsIdOption(byte[] payload)
-			: this()
-		{
-			Payload = payload;
-		}
-
-		internal override void ParseData(byte[] resultData, int startPosition, int length)
+		internal NsIdOption(IList<byte> resultData, int startPosition, int length)
+			: base(EDnsOptionType.NsId)
 		{
 			Payload = DnsMessageBase.ParseByteData(resultData, ref startPosition, length);
 		}
 
+		/// <summary>
+		///   Creates a new instance of the NsIdOption class
+		/// </summary>
+		/// <param name="payload">Binary data of the payload</param>
+		public NsIdOption(byte[] payload)
+			: base(EDnsOptionType.NsId)
+		{
+			Payload = payload;
+		}
+
 		internal override ushort DataLength => (ushort) (Payload?.Length ?? 0);
 
-		internal override void EncodeData(byte[] messageData, ref int currentPosition)
+		internal override void EncodeData(IList<byte> messageData, ref int currentPosition)
 		{
 			DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, Payload);
 		}

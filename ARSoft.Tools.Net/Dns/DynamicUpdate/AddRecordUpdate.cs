@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2017 Alexander Reinert
+// Copyright 2010..2023 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -33,30 +33,27 @@ namespace ARSoft.Tools.Net.Dns.DynamicUpdate
 		/// </summary>
 		public DnsRecordBase Record { get; }
 
-		internal AddRecordUpdate() {}
-
 		/// <summary>
 		///   Creates a new instance of the AddRecordUpdate
 		/// </summary>
 		/// <param name="record"> Record which should be added </param>
 		public AddRecordUpdate(DnsRecordBase record)
-			: base(record.Name, record.RecordType, record.RecordClass, record.TimeToLive)
+			: base(record.Name)
 		{
 			Record = record;
 		}
 
-		internal override void ParseRecordData(byte[] resultData, int startPosition, int length) {}
+		protected override int MaximumRecordDataLength => Record.MaximumRecordDataLength;
 
-		internal override string RecordDataToString()
+		protected override RecordType RecordTypeInternal => Record.RecordType;
+
+		protected override RecordClass RecordClassInternal => Record.RecordClass;
+
+		protected override int TimeToLive => Record.TimeToLive;
+
+		protected override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
 		{
-			return Record?.RecordDataToString();
-		}
-
-		protected internal override int MaximumRecordDataLength => Record.MaximumRecordDataLength;
-
-		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
-		{
-			Record.EncodeRecordData(messageData, offset, ref currentPosition, domainNames, useCanonical);
+			Record.EncodeRecordData(messageData, ref currentPosition, domainNames, useCanonical);
 		}
 	}
 }

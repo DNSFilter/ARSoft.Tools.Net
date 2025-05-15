@@ -1,5 +1,5 @@
 #region Copyright and License
-// Copyright 2010..2017 Alexander Reinert
+// Copyright 2010..2023 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -17,14 +17,42 @@
 #endregion
 
 using System.Net;
+using System.Net.Sockets;
 
 namespace ARSoft.Tools.Net.Dns
 {
-	internal class DnsClientEndpointInfo
+	/// <summary>
+	///   Endpoint info of a connection from a client to a server
+	/// </summary>
+	public class DnsClientEndpointInfo
 	{
-		public bool IsMulticast;
-		public IPAddress LocalAddress;
-		public IPAddress ServerAddress;
-        public int ServerPort;
+		/// <summary>
+		///   Returns a value indicating if multicast communication is used
+		/// </summary>
+		public bool IsMulticast { get; }
+
+		/// <summary>
+		///   The remote IP address
+		/// </summary>
+		public IPAddress DestinationAddress { get; }
+
+		/// <summary>
+		///   The local IP address
+		/// </summary>
+		public IPAddress LocalAddress { get; }
+
+		/// <summary>
+		///   Creates a new instance of the DnsClientEndpointInfo class
+		///   ///
+		/// </summary>
+		/// <param name="isMulticast">A value indicating if multicast communication is used</param>
+		/// <param name="destinationAddress">The remote IP</param>
+		/// <param name="localAddress">The local IP</param>
+		public DnsClientEndpointInfo(bool isMulticast, IPAddress destinationAddress, IPAddress localAddress)
+		{
+			IsMulticast = isMulticast;
+			DestinationAddress = destinationAddress;
+			LocalAddress = localAddress;
+		}
 	}
 }

@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2017 Alexander Reinert
+// Copyright 2010..2023 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,7 +27,7 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>DNSSEC Algorithm Understood option</para>
 	///   <para>
 	///     Defined in
-	///     <see cref="!:http://tools.ietf.org/html/rfc6975">RFC 6975</see>
+	///     <a href="https://www.rfc-editor.org/rfc/rfc6975.html">RFC 6975</a>.
 	///   </para>
 	/// </summary>
 	public class DnssecAlgorithmUnderstoodOption : EDnsOptionBase
@@ -37,20 +37,8 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		public List<DnsSecAlgorithm> Algorithms { get; private set; }
 
-		internal DnssecAlgorithmUnderstoodOption()
-			: base(EDnsOptionType.DnssecAlgorithmUnderstood) {}
-
-		/// <summary>
-		///   Creates a new instance of the DnssecAlgorithmUnderstoodOption class
-		/// </summary>
-		/// <param name="algorithms">The list of algorithms</param>
-		public DnssecAlgorithmUnderstoodOption(List<DnsSecAlgorithm> algorithms)
-			: this()
-		{
-			Algorithms = algorithms;
-		}
-
-		internal override void ParseData(byte[] resultData, int startPosition, int length)
+		internal DnssecAlgorithmUnderstoodOption(IList<byte> resultData, int startPosition, int length)
+			: base(EDnsOptionType.DnssecAlgorithmUnderstood)
 		{
 			Algorithms = new List<DnsSecAlgorithm>(length);
 			for (int i = 0; i < length; i++)
@@ -59,9 +47,19 @@ namespace ARSoft.Tools.Net.Dns
 			}
 		}
 
+		/// <summary>
+		///   Creates a new instance of the DnssecAlgorithmUnderstoodOption class
+		/// </summary>
+		/// <param name="algorithms">The list of algorithms</param>
+		public DnssecAlgorithmUnderstoodOption(params DnsSecAlgorithm[] algorithms)
+			: base(EDnsOptionType.DnssecAlgorithmUnderstood)
+		{
+			Algorithms = algorithms.ToList();
+		}
+
 		internal override ushort DataLength => (ushort) (Algorithms?.Count ?? 0);
 
-		internal override void EncodeData(byte[] messageData, ref int currentPosition)
+		internal override void EncodeData(IList<byte> messageData, ref int currentPosition)
 		{
 			foreach (var algorithm in Algorithms)
 			{

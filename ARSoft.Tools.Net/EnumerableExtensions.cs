@@ -1,7 +1,7 @@
 #region Copyright and License
-// Copyright 2010..2014 Alexander Reinert
+// Copyright 2010..2023 Alexander Reinert
 // 
-// This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (http://arsofttoolsnet.codeplex.com/)
+// This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,15 +16,16 @@
 // limitations under the License.
 #endregion
 
-using System;
+namespace ARSoft.Tools.Net;
 
-namespace ARSoft.Tools.Net.Dns
+internal static class EnumerableExtensions
 {
-	internal class DnsClientParallelState<TMessage>
-		where TMessage : DnsMessageBase
+	public static IEnumerable<T> WhereNotNull<T>(this IEnumerable<T?> data)
 	{
-		internal object Lock = new object();
-		internal IAsyncResult SingleMessageAsyncResult;
-		internal DnsClientParallelAsyncState<TMessage> ParallelMessageAsyncState;
+		foreach (var item in data)
+		{
+			if (item != null)
+				yield return item;
+		}
 	}
 }
