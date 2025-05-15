@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -54,19 +54,20 @@ namespace ARSoft.Tools.Net
 		{
 			try
 			{
-				var connectTask = tcpClient.ConnectAsync(address, port, token).AsTask();
-				var timeoutTask = Task.Delay(timeout, token);
-
-				await Task.WhenAny(connectTask, timeoutTask);
-
-				if (connectTask.IsCompleted)
-					return true;
-
-				tcpClient.Close();
-				return false;
+				await tcpClient.ConnectAsync(address, port, token).AsTask().WaitAsync(TimeSpan.FromMilliseconds(timeout), token);
+				return true;
 			}
 			catch
 			{
+				try
+				{
+					tcpClient.Close();
+				}
+				catch
+				{
+					// ignored
+				}
+
 				return false;
 			}
 		}

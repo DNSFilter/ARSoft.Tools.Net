@@ -1,5 +1,5 @@
-#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+﻿#region Copyright and License
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -16,16 +16,12 @@
 // limitations under the License.
 #endregion
 
-namespace ARSoft.Tools.Net.Dns
+namespace ARSoft.Tools.Net.Dns;
+
+internal static class DnsMessageBaseExtensions
 {
-	/// <summary>
-	///   Interface of a pooled connection initiated by a client
-	/// </summary>
-	public interface IPoolableClientConnection : IClientConnection
+	public static TimeSpan? GetEDnsKeepAliveTimeout(this DnsMessageBase message)
 	{
-		/// <summary>
-		///   Returns a value indicating if the connection is still alive
-		/// </summary>
-		bool IsAlive { get; }
+		return message.EDnsOptions?.Options?.OfType<TcpKeepAliveOption>()?.FirstOrDefault()?.Timeout;
 	}
 }

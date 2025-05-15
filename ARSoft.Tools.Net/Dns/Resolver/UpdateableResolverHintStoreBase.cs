@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -95,9 +95,9 @@ namespace ARSoft.Tools.Net.Dns
 
 		private void LoadZoneInternal(Zone zone)
 		{
-			var nameServers = zone.OfType<NsRecord>().Where(x => x.Name == DomainName.Root).Select(x => x.NameServer);
+			var nameServers = zone.OfType<NsRecord>().Where(x => x.Name.IsRoot).Select(x => x.NameServer);
 			_rootServers = zone.Where(x => x.RecordType == RecordType.A || x.RecordType == RecordType.Aaaa).Join(nameServers, x => x.Name, x => x, (x, y) => ((IAddressRecord) x).Address).ToList();
-			_rootKeys = zone.OfType<DnsKeyRecord>().Where(x => (x.Name == DomainName.Root) && x.IsSecureEntryPoint).Select(x => new DsRecord(x, x.TimeToLive, DnsSecDigestType.Sha256)).ToList();
+			_rootKeys = zone.OfType<DnsKeyRecord>().Where(x => (x.Name.IsRoot) && x.IsSecureEntryPoint).Select(x => new DsRecord(x, x.TimeToLive, DnsSecDigestType.Sha256)).ToList();
 		}
 
 		/// <summary>

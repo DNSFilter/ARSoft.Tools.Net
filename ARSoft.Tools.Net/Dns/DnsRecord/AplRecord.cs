@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -117,7 +117,7 @@ namespace ARSoft.Tools.Net.Dns
 				if ((address.AddressFamily == System.Net.Sockets.AddressFamily.InterNetwork) && (groups["fam"].Value != "1"))
 					throw new FormatException();
 
-				return new AddressPrefix(groups["isneg"].Success, address, Byte.Parse(groups["pref"].Value));
+				return new AddressPrefix(groups["isneg"].Length > 0, address, Byte.Parse(groups["pref"].Value));
 			}
 		}
 

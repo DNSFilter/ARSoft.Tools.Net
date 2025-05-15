@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -54,6 +54,14 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="queryTimeout"> The query timeout in milliseconds </param>
 		public DnsStubResolver(IEnumerable<IPAddress> servers, int queryTimeout = 10000)
 			: this(new DnsClient(servers, queryTimeout)) { }
+
+		/// <summary>
+		///   Provides a new instance using a list of custom DNS servers and a custom query timeout
+		/// </summary>
+		/// <param name="dnsOverHttpsEndpoint"> The uri of a DNS over HTTPS server to use </param>
+		/// <param name="queryTimeout"> The query timeout in milliseconds </param>
+		public DnsStubResolver(Uri dnsOverHttpsEndpoint, int queryTimeout = 10000)
+			: this(new DnsClient(new[] { IPAddress.Any, }, new IClientTransport[] { new HttpsClientTransport(dnsOverHttpsEndpoint) }, true, queryTimeout)) { }
 
 		/// <summary>
 		///   Queries a the upstream DNS server(s) for specified records.
@@ -141,14 +149,14 @@ namespace ARSoft.Tools.Net.Dns
 					return records!;
 				}
 
-				DnsMessage? msg = await _dnsClient.ResolveAsync(name, recordType, recordClass, null, token);
+				var msg = await _dnsClient.ResolveAsync(name, recordType, recordClass, DnsQueryOptions.DefaultQueryOptions, token);
 
 				if ((msg == null) || ((msg.ReturnCode != ReturnCode.NoError) && (msg.ReturnCode != ReturnCode.NxDomain)))
 				{
 					throw new Exception("DNS request failed");
 				}
 
-				CNameRecord? cName = msg.AnswerRecords.Where(x => (x.RecordType == RecordType.CName) && (x.RecordClass == recordClass) && x.Name.Equals(name)).OfType<CNameRecord>().FirstOrDefault();
+				var cName = msg.AnswerRecords.Where(x => (x.RecordType == RecordType.CName) && (x.RecordClass == recordClass) && x.Name.Equals(name)).OfType<CNameRecord>().FirstOrDefault();
 
 				if (cName != null)
 				{
@@ -182,6 +190,19 @@ namespace ARSoft.Tools.Net.Dns
 		public void ClearCache()
 		{
 			_cache = new DnsCache();
+		}
+
+		void IDisposable.Dispose()
+		{
+			Dispose(true);
+			GC.SuppressFinalize(this);
+		}
+
+		protected virtual void Dispose(bool isDisposing) { }
+
+		~DnsStubResolver()
+		{
+			Dispose(false);
 		}
 	}
 }

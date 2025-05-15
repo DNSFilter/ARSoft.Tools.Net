@@ -1,5 +1,5 @@
 #region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -16,6 +16,9 @@
 // limitations under the License.
 #endregion
 
+using System.Collections.ObjectModel;
+using ARSoft.Tools.Net.Dns;
+
 namespace ARSoft.Tools.Net;
 
 internal static class EnumerableExtensions
@@ -27,5 +30,22 @@ internal static class EnumerableExtensions
 			if (item != null)
 				yield return item;
 		}
+	}
+
+	public static T? SingleOrDefaultIfMultiple<T>(this IEnumerable<T> items)
+	{
+		using var enumerator = items.GetEnumerator();
+
+		if (!enumerator.MoveNext())
+			return default;
+
+		var res = enumerator.Current;
+
+		return enumerator.MoveNext() ? default : res;
+	}
+
+	public static T? SingleOrDefaultIfMultiple<T>(this IEnumerable<T> items, Func<T, bool> predicate)
+	{
+		return items.Where(predicate).SingleOrDefault();
 	}
 }

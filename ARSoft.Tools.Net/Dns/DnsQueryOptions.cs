@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -102,5 +102,29 @@ namespace ARSoft.Tools.Net.Dns
 				}
 			}
 		}
+
+		internal static DnsQueryOptions DefaultQueryOptions { get; } = new()
+		{
+			IsRecursionDesired = true,
+			EDnsOptions = new(
+				1232,
+				new DnssecAlgorithmUnderstoodOption(EnumHelper<DnsSecAlgorithm>.Names.Keys.Where(a => a.IsSupported()).ToArray()),
+				new DsHashUnderstoodOption(EnumHelper<DnsSecDigestType>.Names.Keys.Where(d => d.IsSupported()).ToArray()),
+				new Nsec3HashUnderstoodOption(EnumHelper<NSec3HashAlgorithm>.Names.Keys.Where(a => a.IsSupported()).ToArray())
+			)
+		};
+
+		internal static DnsQueryOptions DefaultDnsSecQueryOptions { get; } = new()
+		{
+			IsRecursionDesired = true,
+			IsCheckingDisabled = true,
+			EDnsOptions = new(
+				1232,
+				new DnssecAlgorithmUnderstoodOption(EnumHelper<DnsSecAlgorithm>.Names.Keys.Where(a => a.IsSupported()).ToArray()),
+				new DsHashUnderstoodOption(EnumHelper<DnsSecDigestType>.Names.Keys.Where(d => d.IsSupported()).ToArray()),
+				new Nsec3HashUnderstoodOption(EnumHelper<NSec3HashAlgorithm>.Names.Keys.Where(a => a.IsSupported()).ToArray())
+			),
+			IsDnsSecOk = true
+		};
 	}
 }

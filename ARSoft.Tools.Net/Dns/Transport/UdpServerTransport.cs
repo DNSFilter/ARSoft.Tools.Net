@@ -1,5 +1,5 @@
 #region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -124,11 +124,7 @@ public class UdpServerTransport : IServerTransport
 
 	public void Dispose()
 	{
-		try
-		{
-			_socket.Dispose();
-		}
-		catch { }
+		_socket.TryDispose();
 	}
 
 	private class UdpServerConnection : IServerConnection
@@ -147,6 +143,11 @@ public class UdpServerTransport : IServerTransport
 		}
 
 		public IServerTransport Transport => _transport;
+
+		public Task<bool> InitializeAsync(CancellationToken token)
+		{
+			return Task.FromResult(true);
+		}
 
 		public Task<DnsReceivedRawPackage?> ReceiveAsync(CancellationToken token)
 		{

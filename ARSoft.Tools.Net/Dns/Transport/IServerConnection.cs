@@ -1,5 +1,5 @@
 #region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -29,6 +29,11 @@ public interface IServerConnection : IDisposable
 	///   The corresponding transport
 	/// </summary>
 	IServerTransport Transport { get; }
+
+	/// <summary>
+	///   Initializes the connection before it can be used for sending/receiving data
+	/// </summary>
+	Task<bool> InitializeAsync(CancellationToken token = default);
 
 	/// <summary>
 	///   Receives a new package of the client

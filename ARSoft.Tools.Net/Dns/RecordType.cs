@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -611,6 +611,16 @@ namespace ARSoft.Tools.Net.Dns
 		///   </para>
 		/// </summary>
 		CSync = 62,
+
+		/// <summary>
+		///   <para>ZONEMD</para>
+		///   <para>
+		///     Defined in
+		///     <a href="https://www.rfc-editor.org/rfc/rfc8976.html">RFC 8976</a>.
+		///   </para>
+		/// </summary>
+		// ReSharper disable once InconsistentNaming
+		ZoneMD = 63,
 
 		/// <summary>
 		///   <para>Service Binding</para>

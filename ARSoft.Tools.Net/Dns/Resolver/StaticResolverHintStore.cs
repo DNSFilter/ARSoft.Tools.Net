@@ -1,5 +1,5 @@
 #region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -34,8 +34,8 @@ namespace ARSoft.Tools.Net.Dns
 			IPAddress.Parse("2001:503:ba3e::2:30"),
 
 			// b.root-servers.net
-			IPAddress.Parse("192.228.79.201"),
-			IPAddress.Parse("2001:500:200::b"),
+			IPAddress.Parse("170.247.170.2"),
+			IPAddress.Parse("2801:1b8:10::b"),
 
 			// c.root-servers.net
 			IPAddress.Parse("192.33.4.12"),
@@ -89,7 +89,6 @@ namespace ARSoft.Tools.Net.Dns
 
 		private static readonly List<DsRecord> _rootKeys = new List<DsRecord>()
 		{
-			new DsRecord(DomainName.Root, RecordClass.INet, 0, 19036, DnsSecAlgorithm.RsaSha256, DnsSecDigestType.Sha256, "49AAC11D7B6F6446702E54A1607371607A1A41855200FD2CE1CDDE32F24E8FB5".FromBase16String()),
 			new DsRecord(DomainName.Root, RecordClass.INet, 0, 20326, DnsSecAlgorithm.RsaSha256, DnsSecDigestType.Sha256, "E06D44B80B8F1D39A95C0B0D7C65D08458E880409BBC683457104237C7F8EC8D".FromBase16String()),
 		};
 

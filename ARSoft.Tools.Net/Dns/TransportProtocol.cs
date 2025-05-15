@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -46,6 +46,11 @@ public enum TransportProtocol
 	Https,
 
 	/// <summary>
+	///   DTLS
+	/// </summary>
+	DTls,
+
+	/// <summary>
 	///   Custom
 	/// </summary>
 	Custom
@@ -58,6 +63,7 @@ internal static class TransportProtocolHelper
 		switch (protocol)
 		{
 			case TransportProtocol.Udp:
+			case TransportProtocol.DTls:
 				return ProtocolType.Udp;
 
 			case TransportProtocol.Tcp:

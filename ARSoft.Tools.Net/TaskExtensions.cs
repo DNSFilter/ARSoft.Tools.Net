@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -22,17 +22,26 @@ namespace ARSoft.Tools.Net
 	{
 		public static async Task<T?> WithTimeout<T>(this Task<T> task, int timeout, CancellationToken token = default)
 		{
-			var timeoutTask = Task.Delay(timeout, token);
-
-			await Task.WhenAny(task, timeoutTask);
-
-			return task.IsCompleted ? task.Result : default;
+			try
+			{
+				return await task.WaitAsync(TimeSpan.FromMilliseconds(timeout), token);
+			}
+			catch (TimeoutException)
+			{
+				return default;
+			}
 		}
 
 		public static async Task WithTimeout(this Task task, int timeout, CancellationToken token = default)
 		{
-			var timeoutTask = Task.Delay(timeout, token);
-			await Task.WhenAny(task, timeoutTask);
+			try
+			{
+				await task.WaitAsync(TimeSpan.FromMilliseconds(timeout), token);
+			}
+			catch (TimeoutException)
+			{
+				// ignore
+			}
 		}
 	}
 }

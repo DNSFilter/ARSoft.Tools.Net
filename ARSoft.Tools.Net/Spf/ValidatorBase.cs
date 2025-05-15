@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -86,10 +86,7 @@ namespace ARSoft.Tools.Net.Spf
 		/// <returns> The result of the evaluation </returns>
 		public ValidationResult CheckHost(IPAddress ip, DomainName domain, string sender, bool expandExplanation = false)
 		{
-			var result = CheckHostInternalAsync(ip, domain, sender, expandExplanation, new State(), default(CancellationToken));
-			result.Wait();
-
-			return result.Result;
+			return CheckHostInternalAsync(ip, domain, sender, expandExplanation, new State(), default).GetAwaiter().GetResult();
 		}
 
 		/// <summary>
@@ -142,7 +139,7 @@ namespace ARSoft.Tools.Net.Spf
 
 		private async Task<ValidationResult> CheckHostInternalAsync(IPAddress ip, DomainName? domain, string sender, bool expandExplanation, State state, CancellationToken token)
 		{
-			if ((domain == null) || (domain.Equals(DomainName.Root)))
+			if ((domain == null) || (domain.IsRoot))
 			{
 				return new ValidationResult() { Result = SpfQualifier.None, Explanation = String.Empty };
 			}
@@ -200,7 +197,7 @@ namespace ARSoft.Tools.Net.Spf
 
 					DomainName redirectDomain = await ExpandDomainAsync(redirectModifier.Domain ?? String.Empty, ip, domain, sender, token);
 
-					if ((redirectDomain == null) || (redirectDomain == DomainName.Root) || (redirectDomain.Equals(domain)))
+					if ((redirectDomain == null) || (redirectDomain.IsRoot) || (redirectDomain.Equals(domain)))
 					{
 						result.Result = SpfQualifier.PermError;
 					}
@@ -220,7 +217,7 @@ namespace ARSoft.Tools.Net.Spf
 				{
 					DomainName target = await ExpandDomainAsync(expModifier.Domain, ip, domain, sender, token);
 
-					if ((target == null) || (target.Equals(DomainName.Root)))
+					if (target.IsRoot)
 					{
 						result.Explanation = String.Empty;
 					}
@@ -486,12 +483,9 @@ namespace ARSoft.Tools.Net.Spf
 
 		private async Task<DomainName> ExpandDomainAsync(string pattern, IPAddress ip, DomainName domain, string sender, CancellationToken token)
 		{
-			string expanded = await ExpandMacroAsync(pattern, ip, domain, sender, token);
+			var expanded = await ExpandMacroAsync(pattern, ip, domain, sender, token);
 
-			if (String.IsNullOrEmpty(expanded))
-				return DomainName.Root;
-
-			return DomainName.Parse(expanded);
+			return String.IsNullOrEmpty(expanded) ? DomainName.Root : DomainName.Parse(expanded);
 		}
 
 		private async Task<string> ExpandMacroAsync(string pattern, IPAddress ip, DomainName domain, string sender, CancellationToken token)

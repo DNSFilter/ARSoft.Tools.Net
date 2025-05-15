@@ -1,5 +1,5 @@
 #region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -24,7 +24,7 @@ namespace ARSoft.Tools.Net.Dns;
 /// <summary>
 ///   A transport used by a server using tcp communication
 /// </summary>
-public class TcpServerTransport : TcpServerTransportBase<TcpServerTransport, TcpServerTransport.TcpServerConnection, NetworkStream>
+public class TcpServerTransport : TcpServerTransportBase<TcpServerTransport>
 {
 	/// <summary>
 	///   The default port of TCP DNS communication
@@ -60,17 +60,18 @@ public class TcpServerTransport : TcpServerTransportBase<TcpServerTransport, Tcp
 	public TcpServerTransport(IPEndPoint bindEndPoint, int timeout = 5000, int keepAlive = 120000)
 		: base(bindEndPoint, timeout, keepAlive) { }
 
-	protected override TcpServerConnection CreateConnection(TcpClient client)
+	protected override TcpServerConnectionBase CreateConnection(TcpClient client, CancellationToken token)
 	{
 		return new TcpServerConnection(this, client);
 	}
 
-	/// <summary>
-	///   The connection which is used to the server using TCP communitions
-	/// </summary>
-	public class TcpServerConnection : TcpServerTransportBase<TcpServerTransport, TcpServerTransport.TcpServerConnection, NetworkStream>.TcpServerConnectionBase
+	private class TcpServerConnection : TcpServerConnectionBase
 	{
-		internal TcpServerConnection(TcpServerTransport transport, TcpClient client)
-			: base(transport, client, client.GetStream()) { }
+		public TcpServerConnection(TcpServerTransport transport, TcpClient client) : base(transport, client) { }
+
+		protected override Task<Stream?> GetStreamFromClientAsync(CancellationToken token)
+		{
+			return Task.FromResult<Stream?>(Client.GetStream());
+		}
 	}
 }

@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2023 Alexander Reinert
+// Copyright 2010..2024 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -69,6 +69,8 @@ namespace ARSoft.Tools.Net
 		///   Gets the count of labels this domain name contains
 		/// </summary>
 		public int LabelCount => _labels.Length;
+
+		internal bool IsRoot => _labels.Length == 0;
 
 		internal int MaximumRecordDataLength
 		{
