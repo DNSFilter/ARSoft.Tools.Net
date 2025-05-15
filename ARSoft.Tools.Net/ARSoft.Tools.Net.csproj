@@ -16,12 +16,13 @@
 		<PackageLicenseUrl>https://github.com/alexreinert/ARSoft.Tools.Net/blob/master/LICENSE</PackageLicenseUrl>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<Copyright>Copyright 2010..2023 Alexander Reinert</Copyright>
-		<VersionPrefix>3.2.0</VersionPrefix>
+		<VersionPrefix>3.6.1</VersionPrefix>
+		<AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
 		<Platforms>AnyCPU;x64;ARM64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
-		<PackageReference Include="BouncyCastle.Cryptography" Version="2.2.1" />
+		<PackageReference Include="BouncyCastle.Cryptography" Version="2.6.0" />
 		<PackageReference Include="System.Net.Sockets" Version="4.3.0" />
 	</ItemGroup>
 
@@ -51,6 +52,7 @@
 	<PropertyGroup>
 		<NoWarn>1701;1702;1591</NoWarn>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<AssemblyName>$(MSBuildProjectName)-$(AssemblyVersion)</AssemblyName>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|AnyCPU'">
