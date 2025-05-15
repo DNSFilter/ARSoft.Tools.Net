@@ -1,0 +1,194 @@
+name: Build - ARSoft Tools
+
+on:
+  workflow_dispatch:
+    inputs:
+      configuration: 
+        type: choice
+        description: Type of build to generate
+        options: 
+          - Development
+          - Production
+        default: Production
+      platform:
+        type: choice
+        description: Platform to build for
+        options:
+          - x64
+          - ARM64
+        default: x64
+  push:
+    branches:
+      - "**"
+    paths-ignore:
+      - ".github/**"
+      - "**.sh"
+
+run-name: Build - ARSoft Tools - ${{ inputs.platform || 'x64' }} - ${{ inputs.configuration || 'Production' }}
+permissions:
+  contents: write
+  id-token: write
+
+env:
+  solution-name: ARSoft.Tools.Net.sln
+  repo_name: ARSoft.Tools.Net
+  dll-path: ARSoft.Tools.Net\bin\${{ inputs.platform || 'x64'}}\${{ inputs.configuration || 'Production' }}\net8.0
+
+jobs:
+  check_trigger:
+    name: Check for workflow trigger keyword
+    runs-on: ubuntu-latest
+    outputs:
+      run_build: ${{ steps.check.outputs.run_build }}
+    steps:
+      - name: Check for keyword
+        id: check
+        run: |
+          if [[ "${{ github.event.inputs.configuration }}" != "" ]]; then
+            echo "run_build=true" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.event.head_commit.message }}" == *"[build]"* ]]; then
+            echo "run_build=true" >> $GITHUB_OUTPUT
+          else
+            echo "run_build=false" >> $GITHUB_OUTPUT
+          fi
+
+      - run: |
+          echo "output ${{ steps.check.outputs.run_build }}"
+
+  build:
+    name: Build and deploy ARSoft Tools
+    outputs:
+      error_message: ${{ steps.error_message.outputs.message }}
+      dll_version: ${{ steps.export-version.outputs.dll_version }}
+    runs-on: windows-latest
+    needs: [check_trigger]
+    if: needs.check_trigger.outputs.run_build == 'true'
+    steps:
+      # Checkout
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # Setup NuGet
+      - name: Setup NuGet
+        uses: NuGet/setup-nuget@v2.0.0
+      
+      # Restore NuGet packages
+      - name: Restore NuGet packages
+        run: nuget restore ${{ env.solution-name }}
+
+      # Setup MSBuild
+      - name: Setup MSBuild
+        uses: microsoft/setup-msbuild@v2.0.0
+
+      # Build solution
+      - name: Build solution
+        run: msbuild ${{ env.solution-name }} /p:Configuration="${{ inputs.configuration }}" /p:Platform="${{ inputs.platform }}"
+    
+      # Set versioned DLL file path in environment
+      - name: Set versioned DLL file path in environment
+        run: |
+          echo "dll-file-path=$(dir "${{ env.dll-path }}\*.dll")" >> $env:GITHUB_ENV
+
+      # Extract VERSION of built solution
+      - name: Export DLL version and file
+        id: export-version
+        run: |
+          $version = [System.IO.Path]::GetFileNameWithoutExtension("${{ env.dll-file-path }}").Split('-')[1]
+          $filename = [System.IO.Path]::GetFileName("${{ env.dll-file-path }}")
+          echo "Version : $version "
+          echo "dll_version=${version}" >> $env:GITHUB_OUTPUT
+          echo "dll-file-versioned=${filename}" >> $env:GITHUB_ENV
+
+      - name: Set sanitized branch name
+        run: |
+          SANITIZED_NAME=$(echo "${{ github.ref_name }}" | tr '/' '_')
+          echo "sanitized_branch_name=$SANITIZED_NAME" >> $GITHUB_ENV
+        shell: bash
+
+      # Upload files to GHA Artifacts
+      - name: Upload artifacts to GHA Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: "[${{ env.sanitized_branch_name }}] ARSoft Tools v${{ steps.export-version.outputs.dll_version }} ${{ inputs.configuration }} ${{ inputs.platform }}"
+          path: ${{ env.dll-path }}/*.dll
+          if-no-files-found: warn
+
+      # Wait for a random duration between 1 and 10 seconds to allow the release to be created
+      - name: Wait for Release
+        run: |
+          $waitTime = Get-Random -Minimum 1 -Maximum 11
+          Write-Output "Waiting for $waitTime seconds..."
+          Start-Sleep -s $waitTime
+        shell: pwsh
+          
+      # Create GH release and upload files to GHA Artifacts
+      - name: Upload to GitHub Releases
+        uses: ncipollo/release-action@v1.14.0
+        with:
+          artifacts: "${{ env.dll-path }}/*.dll"
+          name: "[${{ env.sanitized_branch_name }}] ARSoft Tools v${{ steps.export-version.outputs.dll_version }} ${{ inputs.configuration }} ${{ inputs.platform }}"
+          tag: v${{ steps.export-version.outputs.dll_version }}_${{ env.sanitized_branch_name }}_${{ inputs.platform }}
+          commit: ${{github.sha}}
+          allowUpdates: true
+          generateReleaseNotes: true
+          prerelease: true
+          
+      - name: Output error message
+        id: error_message
+        if: failure()
+        run: |
+          echo "message=Build failed, check annotations for details" >> $GITHUB_OUTPUT
+        shell: bash
+    
+  check_status_and_report:
+    name: Check action result
+    needs: [build, check_trigger]
+    if: needs.check_trigger.outputs.run_build == 'true'
+    outputs:
+      slack_message_body: ${{ steps.create_message.outputs.message_body }}
+      slack_message_status: ${{ steps.create_message.outputs.message_status }}
+      slack_urls_buttons: ${{ steps.create_message.outputs.urls_buttons }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Set sanitized branch name
+        run: |
+          SANITIZED_NAME=$(echo "${{ github.ref_name }}" | tr '/' '_')
+          echo "sanitized_branch_name=$SANITIZED_NAME" >> $GITHUB_ENV
+          
+      - name: Create Slack message body
+        id: create_message
+        run: |
+          if [[ "${{ needs.build.outputs.error_message }}" == "" ]]; then
+            message="Workflow: Build ARSoft Tools Net \n"
+            message+=">Platform: ${{ inputs.platform }} \n"
+            message+=">Configuration: ${{ inputs.configuration }} \n"
+            message+=">Version: *${{ needs.build.outputs.dll_version }}* \n"
+            message+=">_Started by_: *${{ github.actor }}*\n>Branch: *${{ github.ref_name }}* \n"
+            message+="Artifacts:  \n"
+            message+="• GH Workflow (expires in 30days)\n"
+            message+="• GH Releases\n"
+            echo "message_status=success" >> $GITHUB_OUTPUT
+            echo 'urls_buttons=[{"label":":github: Release ${{ needs.build.outputs.dll_version }}","url":"https://github.com/DNSFilter/ARSoft.Tools.Net/releases/tag/v${{ needs.build.outputs.dll_version }}_${{ env.sanitized_branch_name }}_${{ env.platform }}"}]' >> $GITHUB_OUTPUT
+          else
+            message="Failed: Build ARSoft Tools Net \n"
+            message+=">Platform: ${{ inputs.platform }} \n"
+            message+=">Configuration: ${{ inputs.configuration }} \n"
+            message+=">Version: *${{ needs.build.outputs.dll_version }}* \n"
+            message+=">_Started by_: *${{ github.actor }}*\n>Branch: *${{ github.ref_name }}* \n"
+            message+="Result: * Check workflow annotations * \n"
+            echo "message_status=error" >> $GITHUB_OUTPUT
+          fi
+          echo "message_body=$message" >> $GITHUB_OUTPUT
+ #             
+ # send_slack_notification:
+ #   name: Dispatch Slack Notification
+ #   uses: "dnsfilter/iac_github_workflows/.github/workflows/slack_dispatcher.yaml@v2"
+ #   needs: [check_status_and_report, check_trigger]
+ #   if: needs.check_trigger.outputs.run_build == 'true'
+ #   with:
+ #     status: ${{ needs.check_status_and_report.outputs.slack_message_status }}
+ #     message: "${{ needs.check_status_and_report.outputs.slack_message_body }}"
+ #     urls-buttons: ${{ needs.check_status_and_report.outputs.slack_urls_buttons }}
+ #   secrets:
+ #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+ #     SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
