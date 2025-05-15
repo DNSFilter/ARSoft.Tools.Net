@@ -9,7 +9,7 @@ on:
         options: 
           - Debug
           - Release
-        default: Production
+        default: Release
       platform:
         type: choice
         description: Platform to build for
@@ -32,7 +32,7 @@ on:
       - ".github/**"
       - "**.sh"
 
-run-name: Build - ARSoft Tools - ${{ inputs.platform || 'x64' }} - ${{ inputs.configuration || 'Production' }}
+run-name: Build - ARSoft Tools - ${{ inputs.platform || 'x64' }} - ${{ inputs.configuration || 'Release' }}
 permissions:
   contents: write
   id-token: write
@@ -40,7 +40,7 @@ permissions:
 env:
   solution-name: ARSoft.Tools.Net.sln
   repo_name: ARSoft.Tools.Net
-  dll-path: bin\${{ inputs.platform || 'x64'}}\${{ inputs.configuration || 'Production' }}\${{ inputs.framework || 'net8.0' }}
+  dll-path: bin\${{ inputs.platform || 'x64'}}\${{ inputs.configuration || 'Release' }}\${{ inputs.framework || 'net8.0' }}
 
 jobs:
   check_trigger:
