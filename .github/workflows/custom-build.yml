@@ -180,15 +180,15 @@ jobs:
           fi
           echo "message_body=$message" >> $GITHUB_OUTPUT
               
-  send_slack_notification:
-    name: Dispatch Slack Notification
-    uses: "dnsfilter/iac_github_workflows/.github/workflows/slack_dispatcher.yaml@v2"
-    needs: [check_status_and_report, check_trigger]
-    if: needs.check_trigger.outputs.run_build == 'true'
-    with:
-      status: ${{ needs.check_status_and_report.outputs.slack_message_status }}
-      message: "${{ needs.check_status_and_report.outputs.slack_message_body }}"
-      urls-buttons: ${{ needs.check_status_and_report.outputs.slack_urls_buttons }}
-    secrets:
-      SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
-      SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
+ # send_slack_notification:
+ #   name: Dispatch Slack Notification
+ #   uses: "dnsfilter/iac_github_workflows/.github/workflows/slack_dispatcher.yaml@v2"
+ #   needs: [check_status_and_report, check_trigger]
+ #   if: needs.check_trigger.outputs.run_build == 'true'
+ #   with:
+ #     status: ${{ needs.check_status_and_report.outputs.slack_message_status }}
+ #     message: "${{ needs.check_status_and_report.outputs.slack_message_body }}"
+ #     urls-buttons: ${{ needs.check_status_and_report.outputs.slack_urls_buttons }}
+ #   secrets:
+ #     SLACK_BOT_TOKEN: ${{ secrets.SLACK_BOT_TOKEN }}
+ #     SLACK_CHANNEL_ID: ${{ secrets.SLACK_CHANNEL_ID }}
