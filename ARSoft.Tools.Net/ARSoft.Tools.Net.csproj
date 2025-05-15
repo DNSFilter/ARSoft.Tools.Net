@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net6.0</TargetFrameworks>
+		<TargetFrameworks>net8.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<BaseOutputPath>..\bin</BaseOutputPath>
 		<BaseIntermediateOutputPath></BaseIntermediateOutputPath>
-		<DocumentationFile>..\bin\$(Configuration)\net6.0\ARSoft.Tools.Net.xml</DocumentationFile>
+		<DocumentationFile>..\bin\$(Configuration)\$(TargetFrameworks)\ARSoft.Tools.Net.xml</DocumentationFile>
 		<Nullable>enable</Nullable>
 		<Title>ARSoft.Tools.Net - C#/.Net DNS client/server, SPF and SenderID Library</Title>
 		<Authors>Alexander Reinert</Authors>
@@ -17,6 +17,7 @@
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<Copyright>Copyright 2010..2023 Alexander Reinert</Copyright>
 		<VersionPrefix>3.2.0</VersionPrefix>
+		<Platforms>AnyCPU;x64;ARM64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
@@ -50,5 +51,35 @@
 	<PropertyGroup>
 		<NoWarn>1701;1702;1591</NoWarn>
 		<PackageReadmeFile>README.md</PackageReadmeFile>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|AnyCPU'">
+	  <IsAotCompatible>True</IsAotCompatible>
+	  <IsTrimmable>True</IsTrimmable>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|x64'">
+	  <IsAotCompatible>True</IsAotCompatible>
+	  <IsTrimmable>True</IsTrimmable>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|ARM64'">
+	  <IsAotCompatible>True</IsAotCompatible>
+	  <IsTrimmable>True</IsTrimmable>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|AnyCPU'">
+	  <IsAotCompatible>True</IsAotCompatible>
+	  <IsTrimmable>True</IsTrimmable>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|x64'">
+	  <IsAotCompatible>True</IsAotCompatible>
+	  <IsTrimmable>True</IsTrimmable>
+	</PropertyGroup>
+
+	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|ARM64'">
+	  <IsAotCompatible>True</IsAotCompatible>
+	  <IsTrimmable>True</IsTrimmable>
 	</PropertyGroup>
 </Project>
