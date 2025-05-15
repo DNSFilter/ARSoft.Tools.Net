@@ -1,12 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net6.0</TargetFrameworks>
+		<TargetFrameworks>net8.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
 		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
 		<BaseOutputPath>..\bin</BaseOutputPath>
 		<BaseIntermediateOutputPath></BaseIntermediateOutputPath>
-		<DocumentationFile>..\bin\$(Configuration)\net6.0\ARSoft.Tools.Net.xml</DocumentationFile>
+		<DocumentationFile>..\bin\$(Configuration)\$(TargetFrameworks)\ARSoft.Tools.Net.xml</DocumentationFile>
 		<Nullable>enable</Nullable>
 		<Title>ARSoft.Tools.Net - C#/.Net DNS client/server, SPF and SenderID Library</Title>
 		<Authors>Alexander Reinert</Authors>
@@ -15,43 +15,40 @@
 		<PackageTags>dns dnssec spf</PackageTags>
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
-		<Copyright>Copyright 2010..2023 Alexander Reinert</Copyright>
-		<VersionPrefix>3.2.0</VersionPrefix>
+		<Copyright>Copyright 2010..2024 Alexander Reinert</Copyright>
+		<VersionPrefix>3.6.1</VersionPrefix>
+		<AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
+		<Platforms>AnyCPU;x64;ARM64</Platforms>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
-		<PackageReference Include="BouncyCastle.Cryptography" Version="2.2.1" />
+		<PackageReference Include="BouncyCastle.Cryptography" Version="2.6.0" />
 		<PackageReference Include="System.Net.Sockets" Version="4.3.0" />
 	</ItemGroup>
 
-  <ItemGroup>
-    <Content Include="..\LICENSE" CopyToOutputDirectory="PreserveNewest" />
-    <Content Include="..\NOTICE" CopyToOutputDirectory="PreserveNewest" />
-  </ItemGroup>
+	<ItemGroup>
+		<Content Include="..\LICENSE" CopyToOutputDirectory="PreserveNewest" />
+		<Content Include="..\NOTICE" CopyToOutputDirectory="PreserveNewest" />
+	</ItemGroup>
 
-  <ItemGroup>
-    <None Include="..\README.md">
-      <Pack>True</Pack>
-      <PackagePath>\</PackagePath>
-    </None>
-  </ItemGroup>
+	<ItemGroup>
+	  <None Include="..\README.md">
+	    <Pack>True</Pack>
+	    <PackagePath>\</PackagePath>
+	  </None>
+	</ItemGroup>
 
-  <ItemGroup Condition="!Exists('..\..\arsoft.pfx')">
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>ARSoft.Tools.Net.Tests</_Parameter1>
-    </AssemblyAttribute>
-  </ItemGroup>
-  <ItemGroup Condition="Exists('..\..\arsoft.pfx')">
-    <AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
-      <_Parameter1>ARSoft.Tools.Net.Tests, PublicKey=00240000048000009400000006020000002400005253413100040000010001009B3C03B877D82BDB95D93615C1521BAE3C1D5E9AF140B9BE44BE07ADF2E2E303481FEF06BE780C26E9422384E9E5B0EFD7CF77B5F1F500BD79062D076F47F4F955BF3090AEEF3CE0D3FD2E9C27F496035D2055D40CFF7835CB4DC40A337C890BBE2973BDDDFEC2DE8EFB7B8B375BDBD96EE5B278D8A69866841BC5D06E817CB5</_Parameter1>
-    </AssemblyAttribute>
-  </ItemGroup>
+	<ItemGroup>
+		<AssemblyAttribute Include="System.Runtime.CompilerServices.InternalsVisibleTo">
+			<_Parameter1>ARSoft.Tools.Net.Tests, PublicKey=00240000048000009400000006020000002400005253413100040000010001009B3C03B877D82BDB95D93615C1521BAE3C1D5E9AF140B9BE44BE07ADF2E2E303481FEF06BE780C26E9422384E9E5B0EFD7CF77B5F1F500BD79062D076F47F4F955BF3090AEEF3CE0D3FD2E9C27F496035D2055D40CFF7835CB4DC40A337C890BBE2973BDDDFEC2DE8EFB7B8B375BDBD96EE5B278D8A69866841BC5D06E817CB5</_Parameter1>
+		</AssemblyAttribute>
+	</ItemGroup>
 
-  <PropertyGroup Condition="Exists('..\..\arsoft.pfx')">
-    <SignAssembly>true</SignAssembly>
-    <AssemblyOriginatorKeyFile>..\..\arsoft.pfx</AssemblyOriginatorKeyFile>
-  </PropertyGroup>
+	<PropertyGroup Condition="Exists('..\..\arsoft.pfx')">
+		<SignAssembly>true</SignAssembly>
+		<AssemblyOriginatorKeyFile>..\..\arsoft.pfx</AssemblyOriginatorKeyFile>
+	</PropertyGroup>
 
 	<PropertyGroup>
 		<NoWarn>1701;1702;1591</NoWarn>
