@@ -7,8 +7,8 @@ on:
         type: choice
         description: Type of build to generate
         options: 
-          - Development
-          - Production
+          - Debug
+          - Release
         default: Production
       platform:
         type: choice
