@@ -17,6 +17,14 @@ on:
           - x64
           - ARM64
         default: x64
+      framework:
+        type: choice
+        description: Target net framework
+        options:
+          - net6.0
+          - net8.0
+          - net9.0
+        default: net8.0
   push:
     branches:
       - "**"
@@ -32,7 +40,7 @@ permissions:
 env:
   solution-name: ARSoft.Tools.Net.sln
   repo_name: ARSoft.Tools.Net
-  dll-path: ARSoft.Tools.Net\bin\${{ inputs.platform || 'x64'}}\${{ inputs.configuration || 'Production' }}\net8.0
+  dll-path: ARSoft.Tools.Net\bin\${{ inputs.platform || 'x64'}}\${{ inputs.configuration || 'Production' }}\${{ inputs.framework || 'net8.0' }}
 
 jobs:
   check_trigger:
@@ -82,7 +90,7 @@ jobs:
 
       # Build solution
       - name: Build solution
-        run: msbuild ${{ env.solution-name }} /p:Configuration="${{ inputs.configuration }}" /p:Platform="${{ inputs.platform }}"
+        run: msbuild ${{ env.solution-name }} /p:Configuration="${{ inputs.configuration }}" /p:TargetFramework="${{ inputs.framework }}" /p:Platform="${{ inputs.platform }}"
     
       # Set versioned DLL file path in environment
       - name: Set versioned DLL file path in environment
