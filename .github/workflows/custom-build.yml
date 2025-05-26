@@ -118,7 +118,9 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: "[${{ env.sanitized_branch_name }}] ARSoft Tools v${{ steps.export-version.outputs.dll_version }} ${{ inputs.configuration }} ${{ inputs.platform }}"
-          path: ${{ env.dll-path }}/*.dll
+          path: |
+              ${{ env.dll-path }}/*.dll
+              ${{ env.dll-path }}/*.pdb
           if-no-files-found: warn
 
       # Wait for a random duration between 1 and 10 seconds to allow the release to be created
