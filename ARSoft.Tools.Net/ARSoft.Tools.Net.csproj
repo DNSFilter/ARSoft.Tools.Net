@@ -20,11 +20,24 @@
 		<AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
 		<Platforms>AnyCPU;x64;ARM64</Platforms>
 	</PropertyGroup>
+	
+	<PropertyGroup>
+		<!-- Enables Symbol Support -->
+		<IncludeSymbols>true</IncludeSymbols>
+		<!-- Enables a separate NuGet Package for Symbols, preventing it from leaking into production. -->
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<!-- Publishes the NuGet Package with information on the repository it came from (needed for GitHub actions to work properly) -->
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 		<PackageReference Include="BouncyCastle.Cryptography" Version="2.6.0" />
 		<PackageReference Include="System.Net.Sockets" Version="4.3.0" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
 
 	<ItemGroup>

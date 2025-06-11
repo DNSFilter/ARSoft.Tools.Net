@@ -90,7 +90,8 @@ jobs:
 
       # Build solution
       - name: Build solution
-        run: msbuild ${{ env.solution-name }} /p:Configuration="${{ inputs.configuration }}" /p:TargetFramework="${{ inputs.framework }}" /p:Platform="${{ inputs.platform }}"
+        # run: msbuild ${{ env.solution-name }} /p:Configuration="${{ inputs.configuration }}" /p:TargetFramework="${{ inputs.framework }}" /p:Platform="${{ inputs.platform }}"
+        run: dotnet pack ${{ env.solution-name }} --configuration "${{ inputs.configuration }}" --framework "${{ inputs.framework }}" --runtime "${{ inputs.platform }}" --output "${{ env.dll-path }}"
     
       # Set versioned DLL file path in environment
       - name: Set versioned DLL file path in environment
@@ -150,9 +151,26 @@ jobs:
           echo "message=Build failed, check annotations for details" >> $GITHUB_OUTPUT
         shell: bash
     
+  upload_packages:
+    name: Publish package to NuGet
+    needs: [build, check_trigger]
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:latest
+    steps:
+    - uses: actions/download-artifact@v4
+      name: Download Artifact
+      with:
+        name: build
+        path: ${{ env.dll-path }}/
+
+    - name: Upload Nuget Packages
+      run: |
+        dotnet nuget push "outputs/*.nupkg" --api-key ${{ secrets.GH_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}
+        dotnet nuget push "outputs/*.snupkg" --api-key ${{ secrets.GH_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}
+    
   check_status_and_report:
     name: Check action result
-    needs: [build, check_trigger]
+    needs: [build, upload_packages, check_trigger]
     if: needs.check_trigger.outputs.run_build == 'true'
     outputs:
       slack_message_body: ${{ steps.create_message.outputs.message_body }}
