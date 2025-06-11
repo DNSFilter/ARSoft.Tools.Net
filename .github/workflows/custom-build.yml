@@ -14,9 +14,9 @@ on:
         type: choice
         description: Platform to build for
         options:
-          - x64
-          - ARM64
-        default: x64
+          - win-x64
+          - win-ARM64
+        default: win-x64
       framework:
         type: choice
         description: Target net framework
