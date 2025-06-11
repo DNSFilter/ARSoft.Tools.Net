@@ -91,7 +91,7 @@ jobs:
       # Build solution
       - name: Build solution
         # run: msbuild ${{ env.solution-name }} /p:Configuration="${{ inputs.configuration }}" /p:TargetFramework="${{ inputs.framework }}" /p:Platform="${{ inputs.platform }}"
-        run: dotnet pack ${{ env.solution-name }} --configuration "${{ inputs.configuration }}" --framework "${{ inputs.framework }}" --runtime "${{ inputs.platform }}" --output "${{ env.dll-path }}"
+        run: dotnet pack ${{ env.solution-name }} --configuration "${{ inputs.configuration }}" -p:TargetFrameworks="${{ inputs.framework }}" --runtime "${{ inputs.platform }}" --output "${{ env.dll-path }}"
     
       # Set versioned DLL file path in environment
       - name: Set versioned DLL file path in environment
