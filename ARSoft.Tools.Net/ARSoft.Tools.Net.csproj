@@ -20,11 +20,25 @@
 		<AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
 		<Platforms>AnyCPU;x64;ARM64</Platforms>
 	</PropertyGroup>
+	
+	<PropertyGroup>
+		<!-- Enables Symbol Support -->
+		<IncludeSymbols>true</IncludeSymbols>
+		<!-- Enables a separate NuGet Package for Symbols, preventing it from leaking into production. -->
+		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
+		<!-- Publishes the NuGet Package with information on the repository it came from (needed for GitHub actions to work properly) -->
+		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+	</PropertyGroup>
 
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
-		<PackageReference Include="BouncyCastle.Cryptography" Version="2.6.0" />
+		<PackageReference Include="BouncyCastle.Cryptography" Version="2.6.1" />
 		<PackageReference Include="System.Net.Sockets" Version="4.3.0" />
+		<PackageReference Include="NuGet.Build.Tasks.Pack" Version="6.14.0" PrivateAssets="all" />
+		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
+			<PrivateAssets>all</PrivateAssets>
+			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+		</PackageReference>
 	</ItemGroup>
 
 	<ItemGroup>
@@ -59,30 +73,45 @@
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|AnyCPU'">
 	  <IsAotCompatible>True</IsAotCompatible>
 	  <IsTrimmable>True</IsTrimmable>
+	  <DebugSymbols>true</DebugSymbols>
+	  <DebugType>full</DebugType>
+	  <Optimize>false</Optimize>
+      <DefineConstants>DEBUG;TRACE;PARAMETRIZABLE</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|x64'">
 	  <IsAotCompatible>True</IsAotCompatible>
 	  <IsTrimmable>True</IsTrimmable>
+	  <DebugSymbols>true</DebugSymbols>
+	  <DebugType>full</DebugType>
+	  <Optimize>false</Optimize>
+	  <DefineConstants>DEBUG;TRACE;PARAMETRIZABLE</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|ARM64'">
 	  <IsAotCompatible>True</IsAotCompatible>
 	  <IsTrimmable>True</IsTrimmable>
+	  <DebugSymbols>true</DebugSymbols>
+	  <DebugType>full</DebugType>
+	  <Optimize>false</Optimize>
+	  <DefineConstants>DEBUG;TRACE;PARAMETRIZABLE</DefineConstants>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|AnyCPU'">
 	  <IsAotCompatible>True</IsAotCompatible>
 	  <IsTrimmable>True</IsTrimmable>
+	  <DebugType>pdbonly</DebugType>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|x64'">
 	  <IsAotCompatible>True</IsAotCompatible>
 	  <IsTrimmable>True</IsTrimmable>
+	  <DebugType>pdbonly</DebugType>
 	</PropertyGroup>
 
 	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|ARM64'">
 	  <IsAotCompatible>True</IsAotCompatible>
 	  <IsTrimmable>True</IsTrimmable>
+	  <DebugType>pdbonly</DebugType>
 	</PropertyGroup>
 </Project>
