@@ -1,0 +1,122 @@
+on:
+  push:
+    branches: ["trunk"]
+    
+  # Uncomment below to introduce support for custom builds.
+  # workflow_dispatch: # For Custom Builds against other branches.
+  #   inputs:
+  #     suffix:
+  #       description: "This is the Version Suffix that's added to the package for a custom build. Make sure you enable the 'Include Prerelease' option when using NuGet Package Manager in order to see your build."
+  #       required: true
+  #       type: string
+  #     configuration:
+  #       description: "This is the build configuration used during packaging."
+  #       default: "Release"
+  #       required: true
+  #       type: choice
+  #       options:
+  #         - Release
+  #         - Debug
+
+name: Publish DNSFilter.ARSoft.Tools.Net
+run-name: Publish DNSFilter.ARSoft.Tools.Net ${{ github.event_name == 'workflow_dispatch' && 'Custom Build' || 'Trunk Build' }}
+
+permissions:
+  contents: read # For writing changelogs, tags, branches
+
+jobs:
+  Detect-Version:
+    runs-on: ubuntu-latest
+    container: node:current-alpine3.18
+    outputs:
+      BUILD_VERSION: ${{ steps.semantic-release-dry-run.outputs.BUILD_VERSION }}
+    permissions:
+      contents: write # To Publish a Release / Tag
+      pull-requests: write # To comment on PRs for Release Version
+      issues: write # To comment on issues for Release Version.
+    steps:
+      - name: Download Dependencies
+        run: apk add --update findutils git
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fix GitHub and NPM
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name "$GITHUB_REPOSITORY CI/CD OBO $GITHUB_ACTOR"
+          git config --global user.email noreply@dnsfilter.com
+          chown $(whoami):$(whoami) -R .
+      - name: Run Semantic Release (Dry-Run)
+        id: semantic-release-dry-run
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          semanticReleaseOutput=$(npx --yes -p @semantic-release/changelog -p @semantic-release/git -p @semantic-release/github -p conventional-changelog-conventionalcommits -p semantic-release semantic-release --dry-run)
+          buildVersion=$(echo "$semanticReleaseOutput" | sed -n 's/.* The next release version is \(.*\)$/\1/gip')
+          echo $buildVersion
+          echo "BUILD_VERSION=$buildVersion" >> "$GITHUB_OUTPUT"
+
+  Build:
+    runs-on: windows-latest
+    needs: [Detect-Version]
+    if: ${{ needs.Detect-Version.outputs.BUILD_VERSION != '' }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Pack Projects
+        run: dotnet pack -c ${{ inputs.configuration || 'Release' }} -o outputs -p:VersionPrefix=${{ needs.Detect-Version.outputs.BUILD_VERSION }} -p:VersionSuffix=${{ inputs.suffix || '' }}
+      - name: Upload Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: build
+          path: outputs/
+
+  Release:
+    runs-on: ubuntu-latest
+    container: node:current-alpine3.18
+    needs: [Detect-Version, Build]
+    if: ${{ needs.Detect-Version.outputs.BUILD_VERSION != '' }}
+    permissions:
+      contents: write # To Publish a Release / Tag
+      pull-requests: write # To comment on PRs for Release Version
+      issues: write # To comment on issues for Release Version.
+    steps:
+      - name: Download Dependencies
+        run: apk add --update findutils git
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+      - name: Fix GitHub and NPM
+        run: |
+          git config --global --add safe.directory "$GITHUB_WORKSPACE"
+          git config --global user.name "$GITHUB_REPOSITORY CI/CD OBO $GITHUB_ACTOR"
+          git config --global user.email noreply@dnsfilter.com
+          chown $(whoami):$(whoami) -R .
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: outputs/
+      - name: Run Semantic Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: npx --yes -p @semantic-release/changelog -p @semantic-release/git -p @semantic-release/github -p conventional-changelog-conventionalcommits -p semantic-release semantic-release
+
+  Publish:
+    runs-on: ubuntu-latest
+    container: mcr.microsoft.com/dotnet/sdk:latest
+    needs: [Detect-Version, Build]
+    if: ${{ needs.Detect-Version.outputs.BUILD_VERSION != '' }}
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: build
+          path: outputs/
+      - name: Upload Nuget Packages
+        run: |
+          dotnet nuget push "outputs/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}
+          dotnet nuget push "outputs/*.snupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}
