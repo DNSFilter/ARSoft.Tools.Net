@@ -157,7 +157,7 @@ namespace ARSoft.Tools.Net.Dns
                     {
                         connection.RestartIdleTimeout(receivedMessage.Message.GetEDnsKeepAliveTimeout());
 
-                        if (receivedMessage.Message.ReturnCode == ReturnCode.ServerFailure)
+                        if (receivedMessage.Message.ReturnCode is ReturnCode.ServerFailure or ReturnCode.NxDomain)
                         {
                             response = receivedMessage.Message;
                             continue;

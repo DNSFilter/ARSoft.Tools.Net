@@ -16,7 +16,7 @@
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<Copyright>Copyright 2010..2024 Alexander Reinert</Copyright>
-		<VersionPrefix>3.6.1</VersionPrefix>
+		<VersionPrefix>3.6.2</VersionPrefix>
 		<AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
 		<Platforms>AnyCPU;x64;ARM64</Platforms>
 	</PropertyGroup>
