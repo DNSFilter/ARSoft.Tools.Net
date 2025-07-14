@@ -1,12 +1,8 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 	<PropertyGroup>
-		<TargetFrameworks>net8.0</TargetFrameworks>
+		<TargetFrameworks>net9.0;net8.0;net6.0</TargetFrameworks>
 		<ImplicitUsings>enable</ImplicitUsings>
-		<GeneratePackageOnBuild>True</GeneratePackageOnBuild>
 		<GenerateDocumentationFile>True</GenerateDocumentationFile>
-		<BaseOutputPath>..\bin</BaseOutputPath>
-		<BaseIntermediateOutputPath></BaseIntermediateOutputPath>
-		<DocumentationFile>..\bin\$(Configuration)\$(TargetFrameworks)\ARSoft.Tools.Net.xml</DocumentationFile>
 		<Nullable>enable</Nullable>
 		<Title>ARSoft.Tools.Net - C#/.Net DNS client/server, SPF and SenderID Library</Title>
 		<Authors>Alexander Reinert</Authors>
@@ -16,25 +12,23 @@
 		<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 		<PackageRequireLicenseAcceptance>true</PackageRequireLicenseAcceptance>
 		<Copyright>Copyright 2010..2024 Alexander Reinert</Copyright>
-		<VersionPrefix>3.6.2</VersionPrefix>
-		<AssemblyVersion>$(VersionPrefix)</AssemblyVersion>
-		<Platforms>AnyCPU;x64;ARM64</Platforms>
-	</PropertyGroup>
-	
-	<PropertyGroup>
 		<!-- Enables Symbol Support -->
 		<IncludeSymbols>true</IncludeSymbols>
 		<!-- Enables a separate NuGet Package for Symbols, preventing it from leaking into production. -->
 		<SymbolPackageFormat>snupkg</SymbolPackageFormat>
 		<!-- Publishes the NuGet Package with information on the repository it came from (needed for GitHub actions to work properly) -->
 		<PublishRepositoryUrl>true</PublishRepositoryUrl>
+		<NoWarn>1701;1702;1591</NoWarn>
+		<PackageReadmeFile>README.md</PackageReadmeFile>
+		<IsAotCompatible Condition="$([MSBuild]::IsTargetFrameworkCompatible('$(TargetFramework)', 'net7.0'))">true</IsAotCompatible> 
+		<IsTrimmable>True</IsTrimmable>
+		<PackageId>DNSFilter.ARSoft.Tools.Net</PackageId>
 	</PropertyGroup>
 
 	<ItemGroup>
 		<FrameworkReference Include="Microsoft.AspNetCore.App" />
 		<PackageReference Include="BouncyCastle.Cryptography" Version="2.6.1" />
 		<PackageReference Include="System.Net.Sockets" Version="4.3.0" />
-		<PackageReference Include="NuGet.Build.Tasks.Pack" Version="6.14.0" PrivateAssets="all" />
 		<PackageReference Include="Microsoft.SourceLink.GitHub" Version="8.0.0">
 			<PrivateAssets>all</PrivateAssets>
 			<IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -62,56 +56,5 @@
 	<PropertyGroup Condition="Exists('..\..\arsoft.pfx')">
 		<SignAssembly>true</SignAssembly>
 		<AssemblyOriginatorKeyFile>..\..\arsoft.pfx</AssemblyOriginatorKeyFile>
-	</PropertyGroup>
-
-	<PropertyGroup>
-		<NoWarn>1701;1702;1591</NoWarn>
-		<PackageReadmeFile>README.md</PackageReadmeFile>
-		<AssemblyName>$(MSBuildProjectName)-$(AssemblyVersion)</AssemblyName>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|AnyCPU'">
-	  <IsAotCompatible>True</IsAotCompatible>
-	  <IsTrimmable>True</IsTrimmable>
-	  <DebugSymbols>true</DebugSymbols>
-	  <DebugType>full</DebugType>
-	  <Optimize>false</Optimize>
-      <DefineConstants>DEBUG;TRACE;PARAMETRIZABLE</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|x64'">
-	  <IsAotCompatible>True</IsAotCompatible>
-	  <IsTrimmable>True</IsTrimmable>
-	  <DebugSymbols>true</DebugSymbols>
-	  <DebugType>full</DebugType>
-	  <Optimize>false</Optimize>
-	  <DefineConstants>DEBUG;TRACE;PARAMETRIZABLE</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Debug|net8.0|ARM64'">
-	  <IsAotCompatible>True</IsAotCompatible>
-	  <IsTrimmable>True</IsTrimmable>
-	  <DebugSymbols>true</DebugSymbols>
-	  <DebugType>full</DebugType>
-	  <Optimize>false</Optimize>
-	  <DefineConstants>DEBUG;TRACE;PARAMETRIZABLE</DefineConstants>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|AnyCPU'">
-	  <IsAotCompatible>True</IsAotCompatible>
-	  <IsTrimmable>True</IsTrimmable>
-	  <DebugType>pdbonly</DebugType>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|x64'">
-	  <IsAotCompatible>True</IsAotCompatible>
-	  <IsTrimmable>True</IsTrimmable>
-	  <DebugType>pdbonly</DebugType>
-	</PropertyGroup>
-
-	<PropertyGroup Condition="'$(Configuration)|$(TargetFramework)|$(Platform)'=='Release|net8.0|ARM64'">
-	  <IsAotCompatible>True</IsAotCompatible>
-	  <IsTrimmable>True</IsTrimmable>
-	  <DebugType>pdbonly</DebugType>
 	</PropertyGroup>
 </Project>
