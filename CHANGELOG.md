@@ -1,3 +1,9 @@
+## [1.1.0](https://github.com/DNSFilter/ARSoft.Tools.Net/compare/v1.0.0...v1.1.0) (2025-07-30)
+
+### Features
+
+* **dnsf-extensions:** Added a new DNSF Extension function to expose internal functionality to the Windows Agent. ([3372efe](https://github.com/DNSFilter/ARSoft.Tools.Net/commit/3372efe477766543f0866f418f788613a85aafce))
+
 ## 1.0.0 (2025-07-14)
 
 ### Features
