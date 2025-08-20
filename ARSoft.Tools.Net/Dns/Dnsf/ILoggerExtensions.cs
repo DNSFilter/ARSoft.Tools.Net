@@ -5,9 +5,6 @@ namespace ARSoft.Tools.Net.Dns.Dnsf;
 
 internal static partial class ILoggerExtensions
 {
-    [LoggerMessage(EventId = -1, Level = LogLevel.Debug, Message = "[{ClientId}] Disposing Client.")]
-    public static partial void LogDnsClientDisposed(this ILogger logger, string clientId);
-
     [LoggerMessage(EventId = 0, Level = LogLevel.Debug, Message = "[{ClientId}] Initialized DNS Client with Timeout {QueryTimeoutInSeconds} and Servers {Servers}. Transports are {TransportNames}.")]
     public static partial void LogDnsClientInitialized(this ILogger logger, string clientId, IEnumerable<IPAddress> servers, int queryTimeoutInSeconds, IEnumerable<string> transportNames);
 
@@ -73,4 +70,7 @@ internal static partial class ILoggerExtensions
 
     [LoggerMessage(EventId = 21, Level = LogLevel.Error, Message = "[{ClientId}:{TransactionId}] Unable to receive subsequent response due to server failure.")]
     public static partial void LogConnectionSubsequentResponseIndicatesServerFailure(this ILogger logger, string clientId, ushort transactionId);
+
+    [LoggerMessage(EventId = 22, Level = LogLevel.Debug, Message = "[{ClientId}] Disposing Client.")]
+    public static partial void LogDnsClientDisposed(this ILogger logger, string clientId);
 }
