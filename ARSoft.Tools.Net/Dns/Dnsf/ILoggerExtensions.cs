@@ -17,7 +17,7 @@ internal static partial class ILoggerExtensions
     [LoggerMessage(EventId = 3, Level = LogLevel.Trace, Message = "[{ClientId}:{TransactionId}] Request Secret Key Transaction Authentication Enabled = {SecretKeyTransactionAuthenticationEnabled}.")]
     public static partial void LogRequestSecretKeyTransactionAuthenticationStatus(this ILogger logger, string clientId, ushort transactionId, bool secretKeyTransactionAuthenticationEnabled);
 
-    [LoggerMessage(EventId = 4, Level = LogLevel.Warning, Message = "[{ClientId}:{TransactionId}] Response Validation Successful: {ResponseValidationSuccessful}.")]
+    [LoggerMessage(EventId = 4, Level = LogLevel.Trace, Message = "[{ClientId}:{TransactionId}] Response Validation Successful: {ResponseValidationSuccessful}.")]
     public static partial void LogResponseMessageValidationResult(this ILogger logger, string clientId, ushort transactionId, bool responseValidationSuccessful);
 
     [LoggerMessage(EventId = 5, Level = LogLevel.Error, Message = "[{ClientId}:{TransactionId}] Request Attempt failed due to an unknown error.")]
