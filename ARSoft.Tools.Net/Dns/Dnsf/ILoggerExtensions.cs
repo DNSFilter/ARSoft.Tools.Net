@@ -17,7 +17,7 @@ internal static partial class ILoggerExtensions
     [LoggerMessage(EventId = 2, Level = LogLevel.Trace, Message = "[{ClientId}:{TransactionId}] Request 0x20 Validation Enabled = {Is0x20ValidationEnabled}.")]
     public static partial void LogRequest0x20ValidationStatus(this ILogger logger, string clientId, ushort transactionId, bool is0x20ValidationEnabled);
 
-    [LoggerMessage(EventId = 3, Level = LogLevel.Trace, Message = "[{ClientId}:{TransactionId}] Request Secret Key Transaction Authentcation Enabled = {SecretKeyTransactionAuthenticationEnabled}.")]
+    [LoggerMessage(EventId = 3, Level = LogLevel.Trace, Message = "[{ClientId}:{TransactionId}] Request Secret Key Transaction Authentication Enabled = {SecretKeyTransactionAuthenticationEnabled}.")]
     public static partial void LogRequestSecretKeyTransactionAuthenticationStatus(this ILogger logger, string clientId, ushort transactionId, bool secretKeyTransactionAuthenticationEnabled);
 
     [LoggerMessage(EventId = 4, Level = LogLevel.Warning, Message = "[{ClientId}:{TransactionId}] Response Validation Successful: {ResponseValidationSuccessful}.")]
