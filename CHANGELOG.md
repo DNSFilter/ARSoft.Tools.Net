@@ -1,3 +1,10 @@
+## [1.2.0](https://github.com/DNSFilter/ARSoft.Tools.Net/compare/v1.1.0...v1.2.0) (2025-08-20)
+
+### Features
+
+* **logging:** Adding a mechanism to add log messages without relying on any specific implementation of logging. Added log messages to DnsClient and DnsClientBase. ([65fdcbb](https://github.com/DNSFilter/ARSoft.Tools.Net/commit/65fdcbbeb56f707a1698943e75b31f1b0097594d))
+* **logging:** Adding a mechanism to add log messages without relying on any specific implementation of logging. Added log messages to DnsClient and DnsClientBase. This is a duplicate message to 65fdcbbeb56f707a1698943e75b31f1b0097594d because I accidentally made the conventional commit use feature instead of feat. ([81c235c](https://github.com/DNSFilter/ARSoft.Tools.Net/commit/81c235c4def87de80d221faca1ed185dd40fc3d1))
+
 ## [1.1.0](https://github.com/DNSFilter/ARSoft.Tools.Net/compare/v1.0.0...v1.1.0) (2025-07-30)
 
 ### Features
