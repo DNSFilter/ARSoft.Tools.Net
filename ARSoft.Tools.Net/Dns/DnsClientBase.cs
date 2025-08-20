@@ -18,6 +18,8 @@
 
 #endregion
 
+using ARSoft.Tools.Net.Dns.Dnsf;
+using Microsoft.Extensions.Logging;
 using Org.BouncyCastle.Crypto.Prng;
 using Org.BouncyCastle.Security;
 using System.Collections.Concurrent;
@@ -51,15 +53,18 @@ namespace ARSoft.Tools.Net.Dns
 
         private readonly IClientTransport[] _transports;
         private readonly bool _disposeTransports;
+        private readonly string _clientId;
+        private readonly ILogger _logger;
 
         internal DnsClientBase(IEnumerable<IPAddress> servers, int queryTimeout, IClientTransport[] transports,
             bool disposeTransports)
         {
             QueryTimeout = queryTimeout;
-
+            _logger = DnsfLogging.LoggerFactory.CreateLogger(nameof(DnsClientBase));
             _transports = transports;
             _disposeTransports = disposeTransports;
-
+            _clientId = Guid.NewGuid().ToString();
+            _logger.LogDnsClientInitialized(_clientId, servers, queryTimeout, transports.Select(t => t.GetType().Name));
             _endpointInfos = GetEndpointInfos(servers);
         }
 
@@ -98,7 +103,10 @@ namespace ARSoft.Tools.Net.Dns
         {
             if (IsResponseValidationEnabled)
             {
-                message.ValidateResponse(response);
+                // This library is all sorts of janky. This will "validate" but it will NEVER return that a response ISN'T valid.
+                // We modify this just for logging purposes, but the original just calls message.ValidateResponse(response) without checking its result.
+                var result = message.ValidateResponse(response);
+                _logger.LogResponseMessageValidationResult(_clientId, message.TransactionID, result);
             }
 
             return true;
@@ -111,15 +119,17 @@ namespace ARSoft.Tools.Net.Dns
             if (message.TransactionID == 0)
             {
                 message.TransactionID = (ushort)_secureRandom.Next(1, 0xffff);
+                _logger.LogRequestTransactionIdMissing(_clientId, message.TransactionID);
             }
 
+            _logger.LogRequest0x20ValidationStatus(_clientId, message.TransactionID, Is0x20ValidationEnabled);
             if (Is0x20ValidationEnabled)
             {
                 message.Add0x20Bits();
             }
 
             var package = message.Encode(null, false, out tsigOriginalMac);
-
+            _logger.LogRequestSecretKeyTransactionAuthenticationStatus(_clientId, message.TransactionID, message.TSigOptions is not null);
             if (message.TSigOptions != null)
             {
                 tsigKeySelector = (_, _, _) => message.TSigOptions!.KeyData;
@@ -138,7 +148,6 @@ namespace ARSoft.Tools.Net.Dns
             var package = PrepareMessage(query, out var tsigKeySelector, out var tsigOriginalMac);
 
             TMessage? response = null;
-
             foreach (var connectionTask in GetConnectionTasks(package, query.IsReliableSendingRequested, token))
             {
                 IClientConnection? connection = null;
@@ -148,7 +157,10 @@ namespace ARSoft.Tools.Net.Dns
                     connection = await connectionTask;
 
                     if (connection == null)
+                    {
+                        _logger.LogRequestFailedMissingConnection(_clientId, query.TransactionID);
                         continue;
+                    }
 
                     var receivedMessage = await SendMessageAsync<TMessage>(package, connection, tsigKeySelector,
                         tsigOriginalMac, token);
@@ -159,12 +171,16 @@ namespace ARSoft.Tools.Net.Dns
 
                         if (receivedMessage.Message.ReturnCode is ReturnCode.ServerFailure or ReturnCode.NxDomain)
                         {
+                            _logger.LogRequestFailedBadReturnCode(_clientId, query.TransactionID, (ushort)receivedMessage.Message.ReturnCode);
                             response = receivedMessage.Message;
                             continue;
                         }
 
                         if (!receivedMessage.Message.IsReliableResendingRequested)
+                        {
+                            _logger.LogResponseSuccessful(_clientId, query.TransactionID);
                             return receivedMessage.Message;
+                        }
 
                         var resendTransport = _transports.FirstOrDefault(t =>
                             t.SupportsReliableTransfer && t.MaximumAllowedQuerySize <= package.Length &&
@@ -172,12 +188,14 @@ namespace ARSoft.Tools.Net.Dns
 
                         if (resendTransport != null)
                         {
+                            _logger.LogRequestReattemptWithReliableTransportRequested(_clientId, query.TransactionID, resendTransport.GetType().Name);
                             using (var resendConnection = await resendTransport.ConnectAsync(
                                        new DnsClientEndpointInfo(false, receivedMessage.ResponderAddress.Address,
                                            receivedMessage.LocalAddress.Address), QueryTimeout, token))
                             {
                                 if (resendConnection == null)
                                 {
+                                    _logger.LogRequestFailedReattemptOverReliableTransportConnectionNotAvailable(_clientId, query.TransactionID);
                                     response = receivedMessage.Message;
                                 }
                                 else
@@ -189,26 +207,34 @@ namespace ARSoft.Tools.Net.Dns
                                         && ValidateResponse(query, resendResponse.Message)
                                         && ((resendResponse.Message.ReturnCode != ReturnCode.ServerFailure)))
                                     {
+                                        _logger.LogResponseSuccessfulOverReliableTransport(_clientId, query.TransactionID);
                                         resendConnection.RestartIdleTimeout(receivedMessage.Message
                                             .GetEDnsKeepAliveTimeout());
                                         return resendResponse.Message;
                                     }
                                     else
                                     {
+                                        _logger.LogRequestFailedReattemptOverReliableTransportResponseMissingOrInvalid(_clientId, query.TransactionID);
                                         resendConnection.MarkFaulty();
                                         response = receivedMessage.Message;
                                     }
                                 }
                             }
                         }
+                        else
+                        {
+                            _logger.LogRequestFailedReattemptOverReliableTransportNotAvailable(_clientId, query.TransactionID);
+                        }
                     }
                     else
                     {
+                        _logger.LogRequestFailedResponseMissingOrInvalid(_clientId, query.TransactionID);
                         connection.MarkFaulty();
                     }
                 }
                 catch (Exception e)
                 {
+                    _logger.LogRequestFailedConnectionException(e, _clientId, query.TransactionID);
                     Trace.TraceError("Error on dns query: " + e);
                     connection?.MarkFaulty();
                 }
@@ -224,6 +250,7 @@ namespace ARSoft.Tools.Net.Dns
         private IEnumerable<Task<IClientConnection?>> GetConnectionTasks(DnsRawPackage package,
             bool isReliableTransportRequested, CancellationToken token)
         {
+            int requestAttempt = 1;
             foreach (var transport in _transports)
             {
                 if (transport.SupportsPooledConnections
@@ -232,7 +259,9 @@ namespace ARSoft.Tools.Net.Dns
                 {
                     foreach (var endpointInfo in _endpointInfos)
                     {
+                        _logger.LogConnectionAttemptWithPooledConnection(_clientId, package.MessageIdentification.TransactionID, requestAttempt, endpointInfo.DestinationAddress, transport.GetType().Name);
                         yield return transport.GetPooledConnectionAsync(endpointInfo, token);
+                        requestAttempt++;
                     }
                 }
             }
@@ -244,7 +273,9 @@ namespace ARSoft.Tools.Net.Dns
                 {
                     foreach (var endpointInfo in _endpointInfos)
                     {
+                        _logger.LogConnectionAttemptWithReliableConnection(_clientId, package.MessageIdentification.TransactionID, requestAttempt, endpointInfo.DestinationAddress, transport.GetType().Name);
                         yield return transport.ConnectAsync(endpointInfo, QueryTimeout, token);
+                        requestAttempt++;
                     }
                 }
             }
@@ -256,12 +287,18 @@ namespace ARSoft.Tools.Net.Dns
             where TMessage : DnsMessageBase, new()
         {
             if (!await connection.SendAsync(package, token))
+            {
+                _logger.LogConnectionRequestSendingFailed(_clientId, package.MessageIdentification.TransactionID, connection.GetType().Name);
                 return null;
+            }
 
             var resultData = await connection.ReceiveAsync(package.MessageIdentification, token);
 
             if (resultData == null)
+            {
+                _logger.LogConnectionResponseReceivingFailed(_clientId, package.MessageIdentification.TransactionID, connection.GetType().Name);
                 return null;
+            }
 
             var response =
                 DnsMessageBase.Parse<TMessage>(resultData.ToArraySegment(false), tsigKeySelector, tsigOriginalMac);
@@ -270,16 +307,23 @@ namespace ARSoft.Tools.Net.Dns
 
             while (isNextMessageWaiting)
             {
+                _logger.LogConnectionResponseIndicatesFurtherMessages(_clientId, package.MessageIdentification.TransactionID);
                 resultData = await connection.ReceiveAsync(package.MessageIdentification, token);
 
                 if (resultData == null)
+                {
+                    _logger.LogConnectionSubsequentResponseMissing(_clientId, package.MessageIdentification.TransactionID);
                     return null;
+                }
 
                 var nextResult = DnsMessageBase.Parse<TMessage>(resultData.ToArraySegment(false), tsigKeySelector,
                     tsigOriginalMac);
 
                 if (nextResult.ReturnCode == ReturnCode.ServerFailure)
+                {
+                    _logger.LogConnectionSubsequentResponseIndicatesServerFailure(_clientId, package.MessageIdentification.TransactionID);
                     return null;
+                }
 
                 response.AddSubsequentResponse(nextResult);
                 isNextMessageWaiting = nextResult.IsNextMessageWaiting(true);
@@ -403,11 +447,13 @@ namespace ARSoft.Tools.Net.Dns
                 }
                 else
                 {
+                    _logger.LogRequestFailedResponseMissingOrInvalid(_clientId, query.TransactionID);
                     connection?.MarkFaulty();
                 }
             }
             catch (Exception e)
             {
+                _logger.LogRequestFailedConnectionException(e, _clientId, query.TransactionID);
                 Trace.TraceError("Error on dns query: " + e);
                 connection?.MarkFaulty();
             }
@@ -491,6 +537,7 @@ namespace ARSoft.Tools.Net.Dns
         {
             if (_disposeTransports)
             {
+                _logger.LogDnsClientDisposed(_clientId);
                 foreach (var transport in _transports)
                 {
                     transport.Dispose();
