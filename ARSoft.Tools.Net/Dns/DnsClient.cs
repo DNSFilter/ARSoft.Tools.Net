@@ -27,7 +27,9 @@ using System.Net.Sockets;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using ARSoft.Tools.Net.Dns.Dnsf;
 using ARSoft.Tools.Net.Dns.DynamicUpdate;
+using Microsoft.Extensions.Logging;
 
 namespace ARSoft.Tools.Net.Dns
 {
@@ -41,7 +43,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   query timeout of 10 seconds.
 		/// </summary>
 		public static DnsClient Default { get; private set; }
-
+        private readonly ILogger _logger;
 		static DnsClient()
 		{
 			Default = new DnsClient(GetLocalConfiguredDnsServers(), 10000) { IsResponseValidationEnabled = true };
@@ -61,7 +63,10 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="dnsServers"> The IPAddresses of the dns servers to use </param>
 		/// <param name="queryTimeout"> Query timeout in milliseconds </param>
 		public DnsClient(IEnumerable<IPAddress> dnsServers, int queryTimeout = 10000)
-			: base(dnsServers, queryTimeout, new IClientTransport[] { new UdpClientTransport(), new TcpClientTransport() }, true) { }
+			: base(dnsServers, queryTimeout, new IClientTransport[] { new UdpClientTransport(), new TcpClientTransport() }, true)
+        {
+            _logger = DnsfLogging.LoggerFactory.CreateLogger<DnsClient>();
+        }
 
 		/// <summary>
 		///   Provides a new instance with custom dns servers and query timeout
@@ -74,17 +79,20 @@ namespace ARSoft.Tools.Net.Dns
 		/// </param>
 		/// <param name="queryTimeout"> Query timeout in milliseconds </param>
 		public DnsClient(IEnumerable<IPAddress> dnsServers, IClientTransport[] transports, bool disposeTransport = false, int queryTimeout = 10000)
-			: base(dnsServers, queryTimeout, transports, disposeTransport) { }
+			: base(dnsServers, queryTimeout, transports, disposeTransport)
+        {
+            _logger = DnsfLogging.LoggerFactory.CreateLogger<DnsClient>();
+        }
 
-		/// <summary>
-		///   Queries a dns server for specified records.
-		/// </summary>
-		/// <param name="name"> Domain, that should be queried </param>
-		/// <param name="recordType"> Type the should be queried </param>
-		/// <param name="recordClass"> Class the should be queried </param>
-		/// <param name="options"> Options for the query </param>
-		/// <returns> The complete response of the dns server </returns>
-		public DnsMessage? Resolve(DomainName name, RecordType recordType = RecordType.A, RecordClass recordClass = RecordClass.INet, DnsQueryOptions? options = null)
+        /// <summary>
+        ///   Queries a dns server for specified records.
+        /// </summary>
+        /// <param name="name"> Domain, that should be queried </param>
+        /// <param name="recordType"> Type the should be queried </param>
+        /// <param name="recordClass"> Class the should be queried </param>
+        /// <param name="options"> Options for the query </param>
+        /// <returns> The complete response of the dns server </returns>
+        public DnsMessage? Resolve(DomainName name, RecordType recordType = RecordType.A, RecordClass recordClass = RecordClass.INet, DnsQueryOptions? options = null)
 		{
 			_ = name ?? throw new ArgumentNullException(nameof(name), "Name must be provided");
 
