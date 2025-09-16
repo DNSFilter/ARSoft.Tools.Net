@@ -60,7 +60,7 @@ namespace ARSoft.Tools.Net.Dns
             bool disposeTransports)
         {
             QueryTimeout = queryTimeout;
-            _logger = DnsfLogging.LoggerFactory.CreateLogger(typeof(DnsClientBase).FullName!);
+            _logger = DnsfLogging.LoggerFactory.CreateLogger(typeof(DnsClientBase).FullName ?? nameof(DnsClientBase));
             _transports = transports;
             _disposeTransports = disposeTransports;
             _clientId = Guid.NewGuid().ToString();
