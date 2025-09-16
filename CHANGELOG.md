@@ -1,3 +1,9 @@
+## [1.2.1](https://github.com/DNSFilter/ARSoft.Tools.Net/compare/v1.2.0...v1.2.1) (2025-09-16)
+
+### Bug Fixes
+
+* **dns-client-base:** Fixing the logger implementation to use the full namespace of the class instead of just the class name for logging filtering purposes. ([f37c0f4](https://github.com/DNSFilter/ARSoft.Tools.Net/commit/f37c0f443faa73c26b5d26f575f4cb23ecf8699e))
+
 ## [1.2.0](https://github.com/DNSFilter/ARSoft.Tools.Net/compare/v1.1.0...v1.2.0) (2025-08-20)
 
 ### Features
