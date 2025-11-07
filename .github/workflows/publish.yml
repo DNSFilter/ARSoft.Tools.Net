@@ -27,7 +27,7 @@ permissions:
 jobs:
   Detect-Version:
     runs-on: ubuntu-latest
-    container: node:current-alpine3.18
+    container: node:current-alpine
     outputs:
       BUILD_VERSION: ${{ steps.semantic-release-dry-run.outputs.BUILD_VERSION }}
     permissions:
@@ -75,7 +75,7 @@ jobs:
 
   Release:
     runs-on: ubuntu-latest
-    container: node:current-alpine3.18
+    container: node:current-alpine
     needs: [Detect-Version, Build]
     if: ${{ needs.Detect-Version.outputs.BUILD_VERSION != '' }}
     permissions:
