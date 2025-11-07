@@ -1,3 +1,9 @@
+## [1.2.2](https://github.com/DNSFilter/ARSoft.Tools.Net/compare/v1.2.1...v1.2.2) (2025-11-07)
+
+### Bug Fixes
+
+* make TcpTls not pooled connection ([edc9b60](https://github.com/DNSFilter/ARSoft.Tools.Net/commit/edc9b60b90dd39235ac94c510e6b1cc38344ddfd))
+
 ## [1.2.1](https://github.com/DNSFilter/ARSoft.Tools.Net/compare/v1.2.0...v1.2.1) (2025-09-16)
 
 ### Bug Fixes
