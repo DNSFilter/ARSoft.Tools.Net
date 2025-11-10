@@ -1,6 +1,10 @@
+// <copyright file="DnsClientBase.cs" company="DNSFilter">
+//      Copyright (c) DNSFilter. All rights reserved.
+// </copyright>
+
 #region Copyright and License
 
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,46 +31,41 @@ using System.Diagnostics;
 using System.Net;
 using System.Net.NetworkInformation;
 using System.Net.Sockets;
-using static ARSoft.Tools.Net.Dns.DnsServer;
 
 namespace ARSoft.Tools.Net.Dns
 {
-    public abstract class DnsClientBase : IDisposable
+    public abstract class DnsClientBase : IDnsClientBase
     {
-        private class ReceivedMessage<TMessage>
-        {
-            public IPEndPoint ResponderAddress { get; }
-            public IPEndPoint LocalAddress { get; }
-            public TMessage Message { get; }
+        private static readonly SecureRandom _secureRandom = new SecureRandom(new CryptoApiRandomGenerator());
+        private readonly RecordType[] _noNeedAnswerRecords = new[] { RecordType.Srv, RecordType.Soa };
 
-            public ReceivedMessage(IPEndPoint responderAddress, IPEndPoint localAddress, TMessage message)
-            {
-                ResponderAddress = responderAddress;
-                LocalAddress = localAddress;
-                Message = message;
-            }
-        }
-
-        private static readonly SecureRandom _secureRandom = new(new CryptoApiRandomGenerator());
-
-        private readonly List<DnsClientEndpointInfo> _endpointInfos;
-
-        private readonly IClientTransport[] _transports;
-        private readonly bool _disposeTransports;
-        private readonly string _clientId;
         private readonly ILogger _logger;
+        private readonly List<IPAddress> _servers;
+        private readonly bool _isAnyServerMulticast;
+        private readonly int _port;
+        private readonly bool _ignoreInconclusiveDNSResolution;
 
-        internal DnsClientBase(IEnumerable<IPAddress> servers, int queryTimeout, IClientTransport[] transports,
-            bool disposeTransports)
+        /// <summary>
+        /// Map to store reusable TCP connections per server.
+        /// </summary>
+        internal ConcurrentDictionary<string, ReusableTcpConnection> reusableTcp;
+
+        internal DnsClientBase(IEnumerable<IPAddress> servers, int queryTimeout, int port,
+            bool ignoreInconclusiveDNSResolution)
         {
+            _servers = servers.OrderBy(s => s.AddressFamily == AddressFamily.InterNetworkV6 ? 0 : 1).ToList();
+            _isAnyServerMulticast = _servers.Any(s => s.IsMulticast());
             QueryTimeout = queryTimeout;
-            _logger = DnsfLogging.LoggerFactory.CreateLogger(typeof(DnsClientBase).FullName ?? nameof(DnsClientBase));
-            _transports = transports;
-            _disposeTransports = disposeTransports;
-            _clientId = Guid.NewGuid().ToString();
-            _logger.LogDnsClientInitialized(_clientId, servers, queryTimeout, transports.Select(t => t.GetType().Name));
-            _endpointInfos = GetEndpointInfos(servers);
+            _port = port;
+            reusableTcp = new ConcurrentDictionary<string, ReusableTcpConnection>();
+            _logger = DnsfLogging.LoggerFactory.CreateLogger<DnsClient>();
+            _ignoreInconclusiveDNSResolution = ignoreInconclusiveDNSResolution;
         }
+
+        /// <summary>
+        /// Gets or sets a value indicating whether the DNS server is allow ENDS options or not.
+        /// </summary>
+        public bool IsEDnsEnabled { get; set; }
 
         /// <summary>
         ///   Milliseconds after which a query times out.
@@ -74,324 +73,836 @@ namespace ARSoft.Tools.Net.Dns
         public int QueryTimeout { get; }
 
         /// <summary>
+        ///   Gets or set a value indicating whether the client should reuse TCP connections.
+        /// </summary>
+        public bool IsReuseTcpEnabled { get; set; }
+
+        /// <summary>
+        ///   Milliseconds after which a reusable TCP connection is considered IDLE and should automatically close, defaults to 5000.
+        /// </summary>
+        public int IdleTimeout { get; set; }
+
+        /// <summary>
         ///   Gets or set a value indicating whether the response is validated as described in
-        ///   <a href="http://tools.ietf.org/id/draft-vixie-dnsext-dns0x20-00.txt">draft-vixie-dnsext-dns0x20-00</a>
+        ///   <see
+        ///     cref="!:http://tools.ietf.org/id/draft-vixie-dnsext-dns0x20-00.txt">
+        ///     draft-vixie-dnsext-dns0x20-00
+        ///   </see>
         /// </summary>
         public bool IsResponseValidationEnabled { get; set; }
 
         /// <summary>
         ///   Gets or set a value indicating whether the query labels are used for additional validation as described in
-        ///   <a href="http://tools.ietf.org/id/draft-vixie-dnsext-dns0x20-00.txt">draft-vixie-dnsext-dns0x20-00</a>
+        ///   <see
+        ///     cref="!:http://tools.ietf.org/id/draft-vixie-dnsext-dns0x20-00.txt">
+        ///     draft-vixie-dnsext-dns0x20-00
+        ///   </see>
         /// </summary>
         // ReSharper disable once InconsistentNaming
         public bool Is0x20ValidationEnabled { get; set; }
 
-        protected TMessage? SendMessage<TMessage>(TMessage query)
+        protected abstract int MaximumQueryMessageSize { get; }
+
+        protected virtual bool IsUdpEnabled { get; set; }
+
+        protected virtual bool IsTcpEnabled { get; set; }
+
+        protected TMessage SendMessage<TMessage>(TMessage message)
             where TMessage : DnsMessageBase, new()
         {
-            return SendMessageAsync<TMessage>(query, CancellationToken.None).GetAwaiter().GetResult();
+            int messageLength;
+            byte[] messageData;
+            DnsServer.SelectTsigKey tsigKeySelector;
+            byte[] tsigOriginalMac;
+
+            PrepareMessage(message, out messageLength, out messageData, out tsigKeySelector, out tsigOriginalMac);
+
+            bool sendByTcp = ((messageLength > MaximumQueryMessageSize) || message.IsTcpUsingRequested ||
+                              !IsUdpEnabled);
+
+            var endpointInfos = GetEndpointInfos();
+
+            for (int i = 0; i < endpointInfos.Count; i++)
+            {
+                var endpointInfo = endpointInfos[i];
+                TcpClient tcpClient = null;
+                System.IO.Stream tcpStream = null;
+
+                string reusableMapKey = string.Concat(endpointInfo.ServerAddress, endpointInfo.ServerPort);
+                if (sendByTcp && this.IsReuseTcpEnabled)
+                {
+                    if (!this.reusableTcp.ContainsKey(reusableMapKey))
+                    {
+                        this.reusableTcp[reusableMapKey] = new ReusableTcpConnection();
+                    }
+
+                    ReusableTcpConnection reuse = this.reusableTcp[reusableMapKey];
+                    tcpClient = reuse.Client;
+                    tcpStream = reuse.Stream;
+                    this.reusableTcp[reusableMapKey].LastUsed = DateTime.UtcNow;
+                }
+
+                try
+                {
+                    IPAddress responderAddress;
+                    int responderPort = 0;
+                    byte[] resultData = sendByTcp
+                        ? QueryByTcp(endpointInfo.ServerAddress, endpointInfo.ServerPort, messageData, messageLength,
+                            ref tcpClient, ref tcpStream, out responderAddress, out responderPort)
+                        : QueryByUdp(endpointInfo, messageData, messageLength, out responderAddress);
+
+                    if (resultData != null)
+                    {
+                        TMessage result;
+
+                        try
+                        {
+                            result = DnsMessageBase.Parse<TMessage>(resultData, tsigKeySelector, tsigOriginalMac);
+                        }
+                        catch (Exception e)
+                        {
+                            Trace.TraceError("Error on dns query: " + e);
+                            continue;
+                        }
+
+                        if (!ValidateResponse(message, result))
+                            continue;
+
+                        if ((result.ReturnCode == ReturnCode.ServerFailure) && (i != endpointInfos.Count - 1))
+                        {
+                            continue;
+                        }
+
+                        if (result.IsTcpResendingRequested)
+                        {
+                            resultData = QueryByTcp(responderAddress, responderPort, messageData, messageLength,
+                                ref tcpClient, ref tcpStream, out responderAddress, out responderPort);
+                            if (resultData != null)
+                            {
+                                TMessage tcpResult;
+
+                                try
+                                {
+                                    tcpResult = DnsMessageBase.Parse<TMessage>(resultData, tsigKeySelector,
+                                        tsigOriginalMac);
+                                }
+                                catch (Exception e)
+                                {
+                                    Trace.TraceError("Error on dns query: " + e);
+                                    continue;
+                                }
+
+                                if (tcpResult.ReturnCode == ReturnCode.ServerFailure)
+                                {
+                                    if (i != endpointInfos.Count - 1)
+                                    {
+                                        continue;
+                                    }
+                                }
+                                else
+                                {
+                                    result = tcpResult;
+                                }
+                            }
+                        }
+
+                        bool isTcpNextMessageWaiting = result.IsTcpNextMessageWaiting(false);
+                        bool isSucessfullFinished = true;
+
+                        while (isTcpNextMessageWaiting)
+                        {
+                            resultData = QueryByTcp(responderAddress, responderPort, null, 0, ref tcpClient,
+                                ref tcpStream, out responderAddress, out responderPort);
+                            if (resultData != null)
+                            {
+                                TMessage tcpResult;
+
+                                try
+                                {
+                                    tcpResult = DnsMessageBase.Parse<TMessage>(resultData, tsigKeySelector,
+                                        tsigOriginalMac);
+                                }
+                                catch (Exception e)
+                                {
+                                    Trace.TraceError("Error on dns query: " + e);
+                                    isSucessfullFinished = false;
+                                    break;
+                                }
+
+                                if (tcpResult.ReturnCode == ReturnCode.ServerFailure)
+                                {
+                                    isSucessfullFinished = false;
+                                    break;
+                                }
+                                else
+                                {
+                                    result.AnswerRecords.AddRange(tcpResult.AnswerRecords);
+                                    isTcpNextMessageWaiting = tcpResult.IsTcpNextMessageWaiting(true);
+                                }
+                            }
+                            else
+                            {
+                                isSucessfullFinished = false;
+                                break;
+                            }
+                        }
+
+                        if (isSucessfullFinished)
+                            return result;
+                    }
+                }
+                finally
+                {
+                    try
+                    {
+                        if (sendByTcp && this.IsReuseTcpEnabled)
+                        {
+                            if (this.reusableTcp[reusableMapKey].Client == null ||
+                                !ReferenceEquals(this.reusableTcp[reusableMapKey].Client, tcpClient))
+                            {
+                                this.reusableTcp[reusableMapKey].Client = tcpClient;
+                                this.reusableTcp[reusableMapKey].Stream = tcpStream;
+                            }
+                        }
+                        else
+                        {
+                            tcpStream?.Dispose();
+                            tcpClient?.Close();
+                        }
+                    }
+                    catch
+                    {
+                        // ignored
+                    }
+                }
+            }
+
+            return null;
         }
 
         protected List<TMessage> SendMessageParallel<TMessage>(TMessage message)
             where TMessage : DnsMessageBase, new()
         {
-            return SendMessageParallelAsync(message, default).GetAwaiter().GetResult();
+            Task<List<TMessage>> result = SendMessageParallelAsync(message, default(CancellationToken));
+
+            result.Wait();
+
+            return result.Result;
         }
 
-        private bool ValidateResponse<TMessage>(TMessage message, TMessage response)
+        private bool ValidateResponse<TMessage>(TMessage message, TMessage result)
             where TMessage : DnsMessageBase
         {
             if (IsResponseValidationEnabled)
             {
-                // This library is all sorts of janky. This will "validate" but it will NEVER return that a response ISN'T valid.
-                // We modify this just for logging purposes, but the original just calls message.ValidateResponse(response) without checking its result.
-                var result = message.ValidateResponse(response);
-                _logger.LogResponseMessageValidationResult(_clientId, message.TransactionID, result);
+                if ((result.ReturnCode == ReturnCode.NoError) || (result.ReturnCode == ReturnCode.NxDomain))
+                {
+                    if (message.TransactionID != result.TransactionID)
+                        return false;
+
+                    if ((message.Questions == null) || (result.Questions == null))
+                        return false;
+
+                    if ((message.Questions.Count != result.Questions.Count))
+                        return false;
+
+                    for (int j = 0; j < message.Questions.Count; j++)
+                    {
+                        DnsQuestion queryQuestion = message.Questions[j];
+                        DnsQuestion responseQuestion = result.Questions[j];
+
+                        if ((queryQuestion.RecordClass != responseQuestion.RecordClass)
+                            || (queryQuestion.RecordType != responseQuestion.RecordType)
+                            || (!queryQuestion.Name.Equals(responseQuestion.Name, false)))
+                        {
+                            return false;
+                        }
+                    }
+                }
             }
 
             return true;
         }
 
-        private DnsRawPackage PrepareMessage<TMessage>(TMessage message, out SelectTsigKey? tsigKeySelector,
-            out byte[]? tsigOriginalMac)
+        private void PrepareMessage<TMessage>(TMessage message, out int messageLength, out byte[] messageData,
+            out DnsServer.SelectTsigKey tsigKeySelector, out byte[] tsigOriginalMac)
             where TMessage : DnsMessageBase, new()
         {
             if (message.TransactionID == 0)
             {
                 message.TransactionID = (ushort)_secureRandom.Next(1, 0xffff);
-                _logger.LogRequestTransactionIdMissing(_clientId, message.TransactionID);
             }
 
-            _logger.LogRequest0x20ValidationStatus(_clientId, message.TransactionID, Is0x20ValidationEnabled);
             if (Is0x20ValidationEnabled)
             {
-                message.Add0x20Bits();
+                message.Questions.ForEach(q => q.Name = q.Name.Add0x20Bits());
             }
 
-            var package = message.Encode(null, false, out tsigOriginalMac);
-            _logger.LogRequestSecretKeyTransactionAuthenticationStatus(_clientId, message.TransactionID, message.TSigOptions is not null);
+            messageLength = message.Encode(false, out messageData);
+
             if (message.TSigOptions != null)
             {
-                tsigKeySelector = (_, _, _) => message.TSigOptions!.KeyData;
+                tsigKeySelector = (n, a) => message.TSigOptions.KeyData;
+                tsigOriginalMac = message.TSigOptions.Mac;
             }
             else
             {
                 tsigKeySelector = null;
+                tsigOriginalMac = null;
             }
-
-            return package;
         }
 
-        protected async Task<TMessage?> SendMessageAsync<TMessage>(TMessage query, CancellationToken token)
+        private byte[] QueryByUdp(DnsClientEndpointInfo endpointInfo, byte[] messageData, int messageLength,
+            out IPAddress responderAddress)
+        {
+            using (var udpClient =
+                   new System.Net.Sockets.Socket(endpointInfo.LocalAddress.AddressFamily, SocketType.Dgram, ProtocolType.Udp))
+            {
+                try
+                {
+                    udpClient.ReceiveTimeout = QueryTimeout;
+
+                    PrepareAndBindUdpSocket(endpointInfo, udpClient);
+
+                    EndPoint serverEndpoint = new IPEndPoint(endpointInfo.ServerAddress, _port);
+
+                    udpClient.SendTo(messageData, messageLength, SocketFlags.None, serverEndpoint);
+
+                    if (endpointInfo.IsMulticast)
+                        serverEndpoint =
+                            new IPEndPoint(
+                                udpClient.AddressFamily == AddressFamily.InterNetwork
+                                    ? IPAddress.Any
+                                    : IPAddress.IPv6Any, _port);
+
+                    byte[] buffer = new byte[65535];
+                    int length = udpClient.ReceiveFrom(buffer, 0, buffer.Length, SocketFlags.None, ref serverEndpoint);
+
+                    responderAddress = ((IPEndPoint)serverEndpoint).Address;
+
+                    byte[] res = new byte[length];
+                    Buffer.BlockCopy(buffer, 0, res, 0, length);
+                    return res;
+                }
+                catch (Exception e)
+                {
+                    Trace.TraceError("Error on dns query: " + e);
+                    responderAddress = default(IPAddress);
+                    return null;
+                }
+            }
+        }
+
+        private void PrepareAndBindUdpSocket(DnsClientEndpointInfo endpointInfo, System.Net.Sockets.Socket udpClient)
+        {
+            if (endpointInfo.IsMulticast)
+            {
+                udpClient.Bind(new IPEndPoint(endpointInfo.LocalAddress, 0));
+            }
+            else
+            {
+                udpClient.Connect(endpointInfo.ServerAddress, _port);
+            }
+        }
+
+        protected virtual byte[] QueryByTcp(IPAddress nameServer, int port, byte[] messageData, int messageLength,
+            ref TcpClient tcpClient, ref System.IO.Stream tcpStream, out IPAddress responderAddress,
+            out int responderPort)
+        {
+            responderAddress = nameServer;
+            responderPort = port == 0 ? _port : port;
+
+            if (!IsTcpEnabled)
+                return null;
+
+            IPEndPoint endPoint = new IPEndPoint(nameServer, port == 0 ? _port : port);
+
+            try
+            {
+                if (tcpClient == null || (this.IsReuseTcpEnabled && !tcpClient.IsConnected()))
+                {
+                    tcpClient = new TcpClient(nameServer.AddressFamily)
+                    {
+                        ReceiveTimeout = QueryTimeout,
+                        SendTimeout = QueryTimeout
+                    };
+
+                    if (!tcpClient.TryConnect(endPoint, QueryTimeout))
+                    {
+                        if (this.IsReuseTcpEnabled)
+                        {
+                            try
+                            {
+                                tcpClient.Close();
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+
+                        return null;
+                    }
+
+                    tcpStream = tcpClient.GetStream();
+                }
+
+                int tmp = 0;
+                byte[] lengthBuffer = new byte[2];
+
+                if (messageLength > 0)
+                {
+                    DnsMessageBase.EncodeUShort(lengthBuffer, ref tmp, (ushort)messageLength);
+
+                    tcpStream.Write(lengthBuffer, 0, 2);
+                    tcpStream.Write(messageData, 0, messageLength);
+                }
+
+                if (!TryRead(tcpClient, tcpStream, lengthBuffer, 2))
+                    return null;
+
+                tmp = 0;
+                int length = DnsMessageBase.ParseUShort(lengthBuffer, ref tmp);
+
+                byte[] resultData = new byte[length];
+
+                return TryRead(tcpClient, tcpStream, resultData, length) ? resultData : null;
+            }
+            catch (Exception e)
+            {
+                Trace.TraceError("Error on dns query: " + e);
+                return null;
+            }
+        }
+
+        protected bool TryRead(TcpClient client, System.IO.Stream stream, byte[] buffer, int length)
+        {
+            int readBytes = 0;
+
+            while (readBytes < length)
+            {
+                if (!client.IsConnected())
+                    return false;
+
+                readBytes += stream.Read(buffer, readBytes, length - readBytes);
+            }
+
+            return true;
+        }
+
+        protected async Task<TMessage> SendMessageAsync<TMessage>(TMessage message, CancellationToken token)
             where TMessage : DnsMessageBase, new()
         {
-            var package = PrepareMessage(query, out var tsigKeySelector, out var tsigOriginalMac);
+            int messageLength;
+            byte[] messageData;
+            DnsServer.SelectTsigKey tsigKeySelector;
+            byte[] tsigOriginalMac;
 
-            TMessage? response = null;
-            foreach (var connectionTask in GetConnectionTasks(package, query.IsReliableSendingRequested, token))
+            PrepareMessage(message, out messageLength, out messageData, out tsigKeySelector, out tsigOriginalMac);
+
+            bool sendByTcp = ((messageLength > MaximumQueryMessageSize) || message.IsTcpUsingRequested ||
+                              !IsUdpEnabled);
+
+            var endpointInfos = GetEndpointInfos();
+
+            WriteLog(
+                $"Attempting to resolve {message.Questions[0].Name} using resolvers {string.Join(", ", endpointInfos.Select(o => o.ServerAddress))}");
+
+            for (int i = 0; i < endpointInfos.Count; i++)
             {
-                IClientConnection? connection = null;
+                token.ThrowIfCancellationRequested();
+
+                var endpointInfo = endpointInfos[i];
+                QueryResponse resultData = null;
+                string reusableMapKey = string.Concat(endpointInfo.ServerAddress, endpointInfo.ServerPort);
 
                 try
                 {
-                    connection = await connectionTask;
+                    var serverAddress = endpointInfo.ServerAddress;
 
-                    if (connection == null)
+                    WriteLog($"Attempting to resolve {message.Questions[0].Name} using resolver {serverAddress}");
+
+                    resultData = await (sendByTcp
+                        ? QueryByTcpAsync(endpointInfo.ServerAddress, endpointInfo.ServerPort, messageData,
+                            messageLength, null, null, token)
+                        : QuerySingleResponseByUdpAsync(endpointInfo, messageData, messageLength, token));
+
+                    if (resultData == null)
                     {
-                        _logger.LogRequestFailedMissingConnection(_clientId, query.TransactionID);
+                        WriteLog($"Domain {message.Questions[0].Name} failed to resolve with resolver {serverAddress}");
                         continue;
                     }
 
-                    var receivedMessage = await SendMessageAsync<TMessage>(package, connection, tsigKeySelector,
-                        tsigOriginalMac, token);
 
-                    if ((receivedMessage != null) && ValidateResponse(query, receivedMessage.Message))
+                    TMessage result;
+
+                    try
                     {
-                        connection.RestartIdleTimeout(receivedMessage.Message.GetEDnsKeepAliveTimeout());
+                        result = DnsMessageBase.Parse<TMessage>(resultData.Buffer, tsigKeySelector, tsigOriginalMac);
+                    }
+                    catch (Exception e)
+                    {
+                        Trace.TraceError("Error on dns query: " + e);
+                        WriteLog($"Domain {message.Questions[0].Name} failed to resolve with resolver {serverAddress}");
+                        continue;
+                    }
 
-                        if (receivedMessage.Message.ReturnCode is ReturnCode.ServerFailure or ReturnCode.NxDomain)
+                    if (!ValidateResponse(message, result))
+                    {
+                        WriteLog($"Domain {message.Questions[0].Name} failed to resolve with resolver {serverAddress}");
+                        continue;
+                    }
+
+                    if ((result.ReturnCode != ReturnCode.NoError) && (result.ReturnCode != ReturnCode.NxDomain))
+                    {
+                        WriteLog($"Domain {message.Questions[0].Name} failed to resolve with resolver {serverAddress}");
+                        continue;
+                    }
+
+                    if (result.IsTcpResendingRequested)
+                    {
+                        serverAddress = resultData.ResponderAddress;
+                        resultData = await QueryByTcpAsync(resultData.ResponderAddress, resultData.ResponderPort,
+                            messageData, messageLength, resultData.TcpClient, resultData.TcpStream, token);
+                        if (resultData != null)
                         {
-                            _logger.LogRequestFailedBadReturnCode(_clientId, query.TransactionID, (ushort)receivedMessage.Message.ReturnCode);
-                            response = receivedMessage.Message;
-                            continue;
-                        }
+                            TMessage tcpResult;
 
-                        if (!receivedMessage.Message.IsReliableResendingRequested)
-                        {
-                            _logger.LogResponseSuccessful(_clientId, query.TransactionID);
-                            return receivedMessage.Message;
-                        }
-
-                        var resendTransport = _transports.FirstOrDefault(t =>
-                            t.SupportsReliableTransfer && t.MaximumAllowedQuerySize <= package.Length &&
-                            t != connection.Transport);
-
-                        if (resendTransport != null)
-                        {
-                            _logger.LogRequestReattemptWithReliableTransportRequested(_clientId, query.TransactionID, resendTransport.GetType().Name);
-                            using (var resendConnection = await resendTransport.ConnectAsync(
-                                       new DnsClientEndpointInfo(false, receivedMessage.ResponderAddress.Address,
-                                           receivedMessage.LocalAddress.Address), QueryTimeout, token))
+                            try
                             {
-                                if (resendConnection == null)
-                                {
-                                    _logger.LogRequestFailedReattemptOverReliableTransportConnectionNotAvailable(_clientId, query.TransactionID);
-                                    response = receivedMessage.Message;
-                                }
-                                else
-                                {
-                                    var resendResponse = await SendMessageAsync<TMessage>(package, resendConnection,
-                                        tsigKeySelector, tsigOriginalMac, token);
+                                tcpResult = DnsMessageBase.Parse<TMessage>(resultData.Buffer, tsigKeySelector,
+                                    tsigOriginalMac);
+                            }
+                            catch (Exception e)
+                            {
+                                Trace.TraceError("Error on dns query: " + e);
+                                WriteLog(
+                                    $"Domain {message.Questions[0].Name} failed to resolve with resolver {serverAddress}");
+                                continue;
+                            }
 
-                                    if ((resendResponse != null)
-                                        && ValidateResponse(query, resendResponse.Message)
-                                        && ((resendResponse.Message.ReturnCode != ReturnCode.ServerFailure)))
-                                    {
-                                        _logger.LogResponseSuccessfulOverReliableTransport(_clientId, query.TransactionID);
-                                        resendConnection.RestartIdleTimeout(receivedMessage.Message
-                                            .GetEDnsKeepAliveTimeout());
-                                        return resendResponse.Message;
-                                    }
-                                    else
-                                    {
-                                        _logger.LogRequestFailedReattemptOverReliableTransportResponseMissingOrInvalid(_clientId, query.TransactionID);
-                                        resendConnection.MarkFaulty();
-                                        response = receivedMessage.Message;
-                                    }
-                                }
+                            if (tcpResult.ReturnCode == ReturnCode.ServerFailure)
+                            {
+                                WriteLog(
+                                    $"Domain {message.Questions[0].Name} failed to resolve with resolver {serverAddress}");
+                                continue;
+                            }
+                            else
+                            {
+                                result = tcpResult;
+                            }
+                        }
+                    }
+
+                    bool isTcpNextMessageWaiting = result.IsTcpNextMessageWaiting(false);
+                    bool isSucessfullFinished = true;
+
+                    while (isTcpNextMessageWaiting)
+                    {
+                        serverAddress = resultData.ResponderAddress;
+                        resultData = await QueryByTcpAsync(resultData.ResponderAddress, resultData.ResponderPort, null,
+                            0, resultData.TcpClient, resultData.TcpStream, token);
+                        if (resultData != null)
+                        {
+                            TMessage tcpResult;
+
+                            try
+                            {
+                                tcpResult = DnsMessageBase.Parse<TMessage>(resultData.Buffer, tsigKeySelector,
+                                    tsigOriginalMac);
+                            }
+                            catch (Exception e)
+                            {
+                                Trace.TraceError("Error on dns query: " + e);
+                                isSucessfullFinished = false;
+                                break;
+                            }
+
+                            if (tcpResult.ReturnCode == ReturnCode.ServerFailure)
+                            {
+                                isSucessfullFinished = false;
+                                break;
+                            }
+                            else
+                            {
+                                result.AnswerRecords.AddRange(tcpResult.AnswerRecords);
+                                isTcpNextMessageWaiting = tcpResult.IsTcpNextMessageWaiting(true);
                             }
                         }
                         else
                         {
-                            _logger.LogRequestFailedReattemptOverReliableTransportNotAvailable(_clientId, query.TransactionID);
+                            isSucessfullFinished = false;
+                            break;
                         }
                     }
-                    else
+
+                    if (isSucessfullFinished && (_ignoreInconclusiveDNSResolution ||
+                                                 (!_ignoreInconclusiveDNSResolution && result != null &&
+                                                  (_noNeedAnswerRecords.Contains(message.Questions[0].RecordType) ||
+                                                   result.AnswerRecords.Any()))))
                     {
-                        _logger.LogRequestFailedResponseMissingOrInvalid(_clientId, query.TransactionID);
-                        connection.MarkFaulty();
+                        WriteLog(
+                            $"Domain {message.Questions[0].Name} successfully resolved with resolver {serverAddress}");
+                        return result;
                     }
-                }
-                catch (Exception e)
-                {
-                    _logger.LogRequestFailedConnectionException(e, _clientId, query.TransactionID);
-                    Trace.TraceError("Error on dns query: " + e);
-                    connection?.MarkFaulty();
+                    else
+                        WriteLog($"Domain {message.Questions[0].Name} failed to resolve with resolver {serverAddress}");
                 }
                 finally
                 {
-                    connection?.Dispose();
+                    if (resultData != null)
+                    {
+                        if (sendByTcp && this.IsReuseTcpEnabled)
+                        {
+                            if (this.reusableTcp[reusableMapKey].Client == null ||
+                                !ReferenceEquals(this.reusableTcp[reusableMapKey].Client, resultData.TcpClient))
+                            {
+                                this.reusableTcp[reusableMapKey].Client = resultData.TcpClient;
+                                this.reusableTcp[reusableMapKey].Stream = resultData.TcpStream;
+                            }
+                        }
+                        else
+                        {
+                            try
+                            {
+                                resultData.TcpStream?.Dispose();
+                                resultData.TcpClient?.Close();
+                            }
+                            catch
+                            {
+                                // ignored
+                            }
+                        }
+                    }
                 }
             }
 
-            return response;
+            return null;
         }
 
-        private IEnumerable<Task<IClientConnection?>> GetConnectionTasks(DnsRawPackage package,
-            bool isReliableTransportRequested, CancellationToken token)
+        private async Task<QueryResponse> QuerySingleResponseByUdpAsync(DnsClientEndpointInfo endpointInfo,
+            byte[] messageData, int messageLength, CancellationToken token)
         {
-            int requestAttempt = 1;
-            foreach (var transport in _transports)
+            try
             {
-                if (transport.SupportsPooledConnections
-                    && package.Length <= transport.MaximumAllowedQuerySize
-                    && (!isReliableTransportRequested || transport.SupportsReliableTransfer))
+                if (endpointInfo.IsMulticast)
                 {
-                    foreach (var endpointInfo in _endpointInfos)
+                    using (UdpClient udpClient = new UdpClient(new IPEndPoint(endpointInfo.LocalAddress, 0)))
                     {
-                        _logger.LogConnectionAttemptWithPooledConnection(_clientId, package.MessageIdentification.TransactionID, requestAttempt, endpointInfo.DestinationAddress, transport.GetType().Name);
-                        yield return transport.GetPooledConnectionAsync(endpointInfo, token);
-                        requestAttempt++;
+                        IPEndPoint serverEndpoint = new IPEndPoint(endpointInfo.ServerAddress, _port);
+                        await udpClient.SendAsync(messageData, messageLength, serverEndpoint);
+
+                        udpClient.Client.SendTimeout = QueryTimeout;
+                        udpClient.Client.ReceiveTimeout = QueryTimeout;
+
+                        UdpReceiveResult response = await udpClient.ReceiveAsync(QueryTimeout, token);
+
+                        return (response.Buffer != null && response.RemoteEndPoint != null)
+                            ? new QueryResponse(response.Buffer, response.RemoteEndPoint.Address)
+                            : null;
+                    }
+                }
+                else
+                {
+                    using (UdpClient udpClient = new UdpClient(endpointInfo.LocalAddress.AddressFamily))
+                    {
+                        udpClient.Connect(endpointInfo.ServerAddress, _port);
+
+                        udpClient.Client.SendTimeout = QueryTimeout;
+                        udpClient.Client.ReceiveTimeout = QueryTimeout;
+
+                        await udpClient.SendAsync(messageData, messageLength);
+
+                        UdpReceiveResult response = await udpClient.ReceiveAsync(QueryTimeout, token);
+
+                        return (response.Buffer != null && response.RemoteEndPoint != null)
+                            ? new QueryResponse(response.Buffer, response.RemoteEndPoint.Address)
+                            : null;
                     }
                 }
             }
-
-            foreach (var transport in _transports)
+            catch (Exception e)
             {
-                if (package.Length <= transport.MaximumAllowedQuerySize
-                    && (!isReliableTransportRequested || transport.SupportsReliableTransfer))
-                {
-                    foreach (var endpointInfo in _endpointInfos)
-                    {
-                        _logger.LogConnectionAttemptWithReliableConnection(_clientId, package.MessageIdentification.TransactionID, requestAttempt, endpointInfo.DestinationAddress, transport.GetType().Name);
-                        yield return transport.ConnectAsync(endpointInfo, QueryTimeout, token);
-                        requestAttempt++;
-                    }
-                }
+                Trace.TraceError("Error on dns query: " + e);
+                return null;
             }
         }
 
-        private async Task<ReceivedMessage<TMessage>?> SendMessageAsync<TMessage>(DnsRawPackage package,
-            IClientConnection connection, SelectTsigKey? tsigKeySelector, byte[]? tsigOriginalMac,
+        protected class QueryResponse
+        {
+            public byte[] Buffer { get; }
+            public IPAddress ResponderAddress { get; }
+            public int ResponderPort { get; }
+
+            public TcpClient TcpClient { get; }
+            public System.IO.Stream TcpStream { get; }
+
+            public QueryResponse(byte[] buffer, IPAddress responderAddress, int responderPort = 0)
+            {
+                Buffer = buffer;
+                ResponderAddress = responderAddress;
+                ResponderPort = responderPort;
+            }
+
+            public QueryResponse(byte[] buffer, IPAddress responderAddress, TcpClient tcpClient,
+                System.IO.Stream tcpStream, int responderPort = 0)
+            {
+                Buffer = buffer;
+                ResponderAddress = responderAddress;
+                ResponderPort = responderPort;
+                TcpClient = tcpClient;
+                TcpStream = tcpStream;
+            }
+        }
+
+        protected virtual async Task<QueryResponse> QueryByTcpAsync(IPAddress nameServer, int port, byte[] messageData,
+            int messageLength, TcpClient tcpClient, System.IO.Stream tcpStream, CancellationToken token)
+        {
+            if (!IsTcpEnabled)
+                return null;
+
+            string reusableMapKey = string.Concat(nameServer, port);
+            if (tcpClient == null && this.IsReuseTcpEnabled)
+            {
+                if (!this.reusableTcp.ContainsKey(reusableMapKey))
+                {
+                    this.reusableTcp[reusableMapKey] = new ReusableTcpConnection();
+                }
+
+                ReusableTcpConnection reuse = this.reusableTcp[reusableMapKey];
+                tcpClient = reuse.Client;
+                tcpStream = reuse.Stream;
+                this.reusableTcp[reusableMapKey].LastUsed = DateTime.UtcNow;
+            }
+
+            int responderPort = port == 0 ? _port : port;
+            try
+            {
+                if (tcpClient == null || (this.IsReuseTcpEnabled && !tcpClient.IsConnected()))
+                {
+                    tcpClient = new TcpClient(nameServer.AddressFamily)
+                    {
+                        ReceiveTimeout = QueryTimeout,
+                        SendTimeout = QueryTimeout
+                    };
+
+                    if (!await tcpClient.TryConnectAsync(nameServer, responderPort, QueryTimeout, token))
+                    {
+                        if (this.IsReuseTcpEnabled)
+                        {
+                            try
+                            {
+                                tcpClient.Close();
+                            }
+                            catch (Exception)
+                            {
+                            }
+                        }
+
+                        return null;
+                    }
+
+                    tcpStream = tcpClient.GetStream();
+                }
+
+                int tmp = 0;
+                byte[] lengthBuffer = new byte[2];
+
+                if (messageLength > 0)
+                {
+                    DnsMessageBase.EncodeUShort(lengthBuffer, ref tmp, (ushort)messageLength);
+
+                    await tcpStream.WriteAsync(lengthBuffer, 0, 2, token);
+                    await tcpStream.WriteAsync(messageData, 0, messageLength, token);
+                }
+
+                if (!await TryReadAsync(tcpClient, tcpStream, lengthBuffer, 2, token))
+                    return null;
+
+                tmp = 0;
+                int length = DnsMessageBase.ParseUShort(lengthBuffer, ref tmp);
+
+                byte[] resultData = new byte[length];
+
+                return await TryReadAsync(tcpClient, tcpStream, resultData, length, token)
+                    ? new QueryResponse(resultData, nameServer, tcpClient, tcpStream, responderPort)
+                    : null;
+            }
+            catch (Exception e)
+            {
+                Trace.TraceError("Error on dns query: " + e);
+                return null;
+            }
+        }
+
+        protected async Task<bool> TryReadAsync(TcpClient client, System.IO.Stream stream, byte[] buffer, int length,
             CancellationToken token)
-            where TMessage : DnsMessageBase, new()
         {
-            if (!await connection.SendAsync(package, token))
+            int readBytes = 0;
+
+            while (readBytes < length)
             {
-                _logger.LogConnectionRequestSendingFailed(_clientId, package.MessageIdentification.TransactionID, connection.GetType().Name);
-                return null;
+                if (token.IsCancellationRequested || !client.IsConnected())
+                    return false;
+
+                readBytes += await stream.ReadAsync(buffer, readBytes, length - readBytes, token);
             }
 
-            var resultData = await connection.ReceiveAsync(package.MessageIdentification, token);
-
-            if (resultData == null)
-            {
-                _logger.LogConnectionResponseReceivingFailed(_clientId, package.MessageIdentification.TransactionID, connection.GetType().Name);
-                return null;
-            }
-
-            var response =
-                DnsMessageBase.Parse<TMessage>(resultData.ToArraySegment(false), tsigKeySelector, tsigOriginalMac);
-
-            var isNextMessageWaiting = response.IsNextMessageWaiting(false);
-
-            while (isNextMessageWaiting)
-            {
-                _logger.LogConnectionResponseIndicatesFurtherMessages(_clientId, package.MessageIdentification.TransactionID);
-                resultData = await connection.ReceiveAsync(package.MessageIdentification, token);
-
-                if (resultData == null)
-                {
-                    _logger.LogConnectionSubsequentResponseMissing(_clientId, package.MessageIdentification.TransactionID);
-                    return null;
-                }
-
-                var nextResult = DnsMessageBase.Parse<TMessage>(resultData.ToArraySegment(false), tsigKeySelector,
-                    tsigOriginalMac);
-
-                if (nextResult.ReturnCode == ReturnCode.ServerFailure)
-                {
-                    _logger.LogConnectionSubsequentResponseIndicatesServerFailure(_clientId, package.MessageIdentification.TransactionID);
-                    return null;
-                }
-
-                response.AddSubsequentResponse(nextResult);
-                isNextMessageWaiting = nextResult.IsNextMessageWaiting(true);
-            }
-
-            return new ReceivedMessage<TMessage>(resultData.RemoteEndpoint, resultData.LocalEndpoint, response);
+            return true;
         }
 
         protected async Task<List<TMessage>> SendMessageParallelAsync<TMessage>(TMessage message,
             CancellationToken token)
             where TMessage : DnsMessageBase, new()
         {
-            var package = PrepareMessage(message, out var tsigKeySelector, out var tsigOriginalMac);
+            int messageLength;
+            byte[] messageData;
+            DnsServer.SelectTsigKey tsigKeySelector;
+            byte[] tsigOriginalMac;
 
-            var multicastTransport = _transports.FirstOrDefault(t => t.SupportsMulticastTransfer);
+            PrepareMessage(message, out messageLength, out messageData, out tsigKeySelector, out tsigOriginalMac);
 
-            if (multicastTransport == null)
-                return new List<TMessage>();
-
-            if (package.Length > multicastTransport.MaximumAllowedQuerySize)
+            if (messageLength > MaximumQueryMessageSize)
                 throw new ArgumentException("Message exceeds maximum size");
 
-            if (message.IsReliableSendingRequested)
-                throw new NotSupportedException("Sending reliable messages is not supported in multicast mode");
+            if (message.IsTcpUsingRequested)
+                throw new NotSupportedException("Using tcp is not supported in parallel mode");
 
-            var results = new BlockingCollection<TMessage>();
-            var cancellationTokenSource = new CancellationTokenSource();
+            BlockingCollection<TMessage> results = new BlockingCollection<TMessage>();
+            CancellationTokenSource cancellationTokenSource = new CancellationTokenSource();
 
-            cancellationTokenSource.CancelAfter(QueryTimeout);
-
-            var tasks = _endpointInfos.Select(x => SendMessageParallelAsync(multicastTransport, x, message, package,
+            // ReSharper disable once ReturnValueOfPureMethodIsNotUsed
+            GetEndpointInfos().Select(x => SendMessageParallelAsync(x, message, messageData, messageLength,
                 tsigKeySelector, tsigOriginalMac, results,
                 CancellationTokenSource.CreateLinkedTokenSource(token, cancellationTokenSource.Token).Token)).ToArray();
 
-            await Task.WhenAll(tasks);
+            await Task.Delay(QueryTimeout, token);
+
+            cancellationTokenSource.Cancel();
 
             return results.ToList();
         }
 
-        private async Task SendMessageParallelAsync<TMessage>(IClientTransport transport,
-            DnsClientEndpointInfo endpointInfo, TMessage query, DnsRawPackage package, SelectTsigKey? tsigKeySelector,
-            byte[]? tsigOriginalMac, BlockingCollection<TMessage> results, CancellationToken token)
+        private async Task SendMessageParallelAsync<TMessage>(DnsClientEndpointInfo endpointInfo, TMessage message,
+            byte[] messageData, int messageLength, DnsServer.SelectTsigKey tsigKeySelector, byte[] tsigOriginalMac,
+            BlockingCollection<TMessage> results, CancellationToken token)
             where TMessage : DnsMessageBase, new()
         {
-            using (var connection = await transport.ConnectAsync(endpointInfo, QueryTimeout, token))
+            using (UdpClient udpClient = new UdpClient(new IPEndPoint(endpointInfo.LocalAddress, 0)))
             {
-                if (connection == null)
-                    return;
+                IPEndPoint serverEndpoint = new IPEndPoint(endpointInfo.ServerAddress, _port);
+                await udpClient.SendAsync(messageData, messageLength, serverEndpoint);
 
-                if (!await connection.SendAsync(package, token))
-                    return;
+                udpClient.Client.SendTimeout = QueryTimeout;
+                udpClient.Client.ReceiveTimeout = QueryTimeout;
 
                 while (true)
                 {
-                    if (token.IsCancellationRequested)
-                        break;
-
-                    var response = await connection.ReceiveAsync(package.MessageIdentification, token);
-
-                    if (response == null)
-                        continue;
-
                     TMessage result;
+                    UdpReceiveResult response = await udpClient.ReceiveAsync(Int32.MaxValue, token);
 
                     try
                     {
-                        result = DnsMessageBase.Parse<TMessage>(response.ToArraySegment(false), tsigKeySelector,
-                            tsigOriginalMac);
+                        result = DnsMessageBase.Parse<TMessage>(response.Buffer, tsigKeySelector, tsigOriginalMac);
                     }
                     catch (Exception e)
                     {
@@ -399,76 +910,24 @@ namespace ARSoft.Tools.Net.Dns
                         continue;
                     }
 
-                    if (!ValidateResponse(query, result))
+                    if (!ValidateResponse(message, result))
                         continue;
 
                     if (result.ReturnCode == ReturnCode.ServerFailure)
                         continue;
 
-                    var resendTransport = _transports.FirstOrDefault(t =>
-                        t.SupportsReliableTransfer && t.MaximumAllowedQuerySize <= package.Length &&
-                        t != connection.Transport);
-                    if (result.IsReliableResendingRequested && resendTransport != null)
-                    {
-                        ResendParallelMessageAsync(resendTransport,
-                            new DnsClientEndpointInfo(false, response.RemoteEndpoint.Address,
-                                response.LocalEndpoint.Address), query, package, tsigKeySelector, tsigOriginalMac,
-                            results, token).Start();
-                    }
-                    else
-                    {
-                        results.Add(result, token);
-                    }
+                    results.Add(result, token);
+
+                    if (token.IsCancellationRequested)
+                        break;
                 }
             }
         }
 
-        private async Task ResendParallelMessageAsync<TMessage>(IClientTransport transport,
-            DnsClientEndpointInfo endpointInfo, TMessage query, DnsRawPackage package, SelectTsigKey? tsigKeySelector,
-            byte[]? tsigOriginalMac, BlockingCollection<TMessage> results, CancellationToken token)
-            where TMessage : DnsMessageBase, new()
+        internal virtual List<DnsClientEndpointInfo> GetEndpointInfos()
         {
-            if (endpointInfo.IsMulticast && !transport.SupportsMulticastTransfer)
-                return;
-
-            IClientConnection? connection = null;
-
-            try
-            {
-                connection = await transport.ConnectAsync(endpointInfo, QueryTimeout, token);
-
-                var response =
-                    await SendMessageAsync<TMessage>(package, connection!, tsigKeySelector, tsigOriginalMac, token);
-
-                if ((response != null)
-                    && ValidateResponse(query, response.Message))
-                {
-                    results.Add(response.Message, token);
-                }
-                else
-                {
-                    _logger.LogRequestFailedResponseMissingOrInvalid(_clientId, query.TransactionID);
-                    connection?.MarkFaulty();
-                }
-            }
-            catch (Exception e)
-            {
-                _logger.LogRequestFailedConnectionException(e, _clientId, query.TransactionID);
-                Trace.TraceError("Error on dns query: " + e);
-                connection?.MarkFaulty();
-            }
-            finally
-            {
-                connection?.Dispose();
-            }
-        }
-
-        private List<DnsClientEndpointInfo> GetEndpointInfos(IEnumerable<IPAddress> servers)
-        {
-            servers = servers.OrderBy(s => s.AddressFamily == AddressFamily.InterNetworkV6 ? 0 : 1).ToList();
-
             List<DnsClientEndpointInfo> endpointInfos;
-            if (servers.Any(s => s.IsMulticast()))
+            if (_isAnyServerMulticast)
             {
                 var localIPs = NetworkInterface.GetAllNetworkInterfaces()
                     .Where(n => n.SupportsMulticast && (n.OperationalStatus == OperationalStatus.Up) &&
@@ -478,45 +937,62 @@ namespace ARSoft.Tools.Net.Dns
                                 ((a.AddressFamily == AddressFamily.InterNetwork) || a.IsIPv6LinkLocal))
                     .ToList();
 
-                endpointInfos = servers
+                endpointInfos = _servers
                     .SelectMany(s =>
                     {
                         if (s.IsMulticast())
                         {
                             return localIPs
                                 .Where(l => l.AddressFamily == s.AddressFamily)
-                                .Select(l => new DnsClientEndpointInfo(true, s, l));
+                                .Select(l =>
+                                    new DnsClientEndpointInfo
+                                    {
+                                        IsMulticast = true,
+                                        ServerAddress = s,
+                                        LocalAddress = l
+                                    });
                         }
                         else
                         {
                             return new[]
                             {
-                                new DnsClientEndpointInfo(false, s,
-                                    s.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any)
+                                new DnsClientEndpointInfo
+                                {
+                                    IsMulticast = false,
+                                    ServerAddress = s,
+                                    LocalAddress = s.AddressFamily == AddressFamily.InterNetwork
+                                        ? IPAddress.Any
+                                        : IPAddress.IPv6Any
+                                }
                             };
                         }
                     }).ToList();
             }
             else
             {
-                endpointInfos = servers
+                endpointInfos = _servers
                     .Where(x => IsIPv6Enabled || (x.AddressFamily == AddressFamily.InterNetwork))
-                    .Select(s => new DnsClientEndpointInfo(false, s,
-                        s.AddressFamily == AddressFamily.InterNetwork ? IPAddress.Any : IPAddress.IPv6Any))
-                    .ToList();
+                    .Select(s => new DnsClientEndpointInfo
+                    {
+                        IsMulticast = false,
+                        ServerAddress = s,
+                        LocalAddress = s.AddressFamily == AddressFamily.InterNetwork
+                                ? IPAddress.Any
+                                : IPAddress.IPv6Any
+                    }
+                    ).ToList();
             }
 
             return endpointInfos;
         }
 
-        private static bool IsIPv6Enabled
-        {
-            get => IsAnyIPv6Configured();
-        }
+        //protected static bool IsIPv6Enabled { get { return IsAnyIPv6Configured(); } }
+        //protected static bool IsIPv6Enabled { get; } = IsAnyIPv6Configured();
+        protected static bool IsIPv6Enabled { get; } = true;
 
-        private static readonly IPAddress _ipvMappedNetworkAddress = IPAddress.Parse("0:0:0:0:0:FFFF::");
+        protected static readonly IPAddress _ipvMappedNetworkAddress = IPAddress.Parse("0:0:0:0:0:FFFF::");
 
-        private static bool IsAnyIPv6Configured()
+        protected static bool IsAnyIPv6Configured()
         {
             return NetworkInterface.GetAllNetworkInterfaces()
                 .Where(n => (n.OperationalStatus == OperationalStatus.Up) &&
@@ -527,27 +1003,10 @@ namespace ARSoft.Tools.Net.Dns
                           !a.GetNetworkAddress(96).Equals(_ipvMappedNetworkAddress));
         }
 
-        void IDisposable.Dispose()
+        private void WriteLog(string message)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-
-        protected virtual void Dispose(bool isDisposing)
-        {
-            if (_disposeTransports)
-            {
-                _logger.LogDnsClientDisposed(_clientId);
-                foreach (var transport in _transports)
-                {
-                    transport.Dispose();
-                }
-            }
-        }
-
-        ~DnsClientBase()
-        {
-            Dispose(false);
+            if (_logger != null)
+                _logger.LogDebug(message);
         }
     }
 }

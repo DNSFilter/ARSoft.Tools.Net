@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -29,31 +29,42 @@ namespace ARSoft.Tools.Net.Dns.DynamicUpdate
 	public class DeleteRecordUpdate : UpdateBase
 	{
 		/// <summary>
-		///   Record which should be added
+		///   Record that should be deleted
 		/// </summary>
 		public DnsRecordBase Record { get; }
 
+		internal DeleteRecordUpdate() {}
+
 		/// <summary>
-		///   Creates a new instance of the DeleteRecordUpdate
+		///   Creates a new instance of the DeleteRecordUpdate class
 		/// </summary>
-		/// <param name="record"> Record which should be deleted </param>
+		/// <param name="name"> Name of the record that should be deleted </param>
+		/// <param name="recordType"> Type of the record that should be deleted </param>
+		public DeleteRecordUpdate(DomainName name, RecordType recordType)
+			: base(name, recordType, RecordClass.Any, 0) {}
+
+		/// <summary>
+		///   Creates a new instance of the DeleteRecordUpdate class
+		/// </summary>
+		/// <param name="record"> Record that should be deleted </param>
 		public DeleteRecordUpdate(DnsRecordBase record)
-			: base(record.Name)
+			: base(record.Name, record.RecordType, RecordClass.None, 0)
 		{
 			Record = record;
 		}
 
-		protected override int MaximumRecordDataLength => Record.MaximumRecordDataLength;
+		internal override void ParseRecordData(byte[] resultData, int startPosition, int length) {}
 
-		protected override RecordType RecordTypeInternal => Record.RecordType;
-
-		protected override RecordClass RecordClassInternal => RecordClass.None;
-
-		protected override int TimeToLive => 0;
-
-		protected override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
+		internal override string RecordDataToString()
 		{
-			Record.EncodeRecordData(messageData, ref currentPosition, domainNames, useCanonical);
+			return Record?.RecordDataToString();
+		}
+
+		protected internal override int MaximumRecordDataLength => Record?.MaximumRecordDataLength ?? 0;
+
+		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
+		{
+			Record?.EncodeRecordData(messageData, offset, ref currentPosition, domainNames, useCanonical);
 		}
 	}
 }

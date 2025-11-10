@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -28,30 +28,24 @@ namespace ARSoft.Tools.Net.Dns
 	public class ClientConnectedEventArgs : EventArgs
 	{
 		/// <summary>
-		///   Protocol which is used by the client
+		///   Protocol used by the client
 		/// </summary>
-		public TransportProtocol TransportProtocol { get; }
+		public ProtocolType ProtocolType { get; private set; }
 
 		/// <summary>
 		///   Remote endpoint of the client
 		/// </summary>
-		public IPEndPoint RemoteEndpoint { get; }
-
-		/// <summary>
-		///   Local endpoint to which the client is connected
-		/// </summary>
-		public IPEndPoint LocalEndpoint { get; }
+		public IPEndPoint RemoteEndpoint { get; private set; }
 
 		/// <summary>
 		///   If true, the client connection will be refused
 		/// </summary>
 		public bool RefuseConnect { get; set; }
 
-		internal ClientConnectedEventArgs(TransportProtocol transportType, IPEndPoint remoteEndpoint, IPEndPoint localEndPoint)
+		internal ClientConnectedEventArgs(ProtocolType protocolType, IPEndPoint remoteEndpoint)
 		{
-			TransportProtocol = transportType;
+			ProtocolType = protocolType;
 			RemoteEndpoint = remoteEndpoint;
-			LocalEndpoint = localEndPoint;
 		}
 	}
 }

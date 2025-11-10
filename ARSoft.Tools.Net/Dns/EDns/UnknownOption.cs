@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -31,28 +31,30 @@ namespace ARSoft.Tools.Net.Dns
 		/// <summary>
 		///   Binary data of the option
 		/// </summary>
-		public byte[]? Data { get; private set; }
+		public byte[] Data { get; private set; }
 
-		internal UnknownOption(EDnsOptionType type, IList<byte> resultData, int startPosition, int length)
-			: base(type)
-		{
-			Data = DnsMessageBase.ParseByteData(resultData, ref startPosition, length);
-		}
+		internal UnknownOption(EDnsOptionType type)
+			: base(type) {}
 
 		/// <summary>
 		///   Creates a new instance of the UnknownOption class
 		/// </summary>
 		/// <param name="type">Type of the option</param>
 		/// <param name="data">The data of the option</param>
-		public UnknownOption(EDnsOptionType type, byte[]? data = null)
-			: base(type)
+		public UnknownOption(EDnsOptionType type, byte[] data)
+			: this(type)
 		{
 			Data = data;
 		}
 
+		internal override void ParseData(byte[] resultData, int startPosition, int length)
+		{
+			Data = DnsMessageBase.ParseByteData(resultData, ref startPosition, length);
+		}
+
 		internal override ushort DataLength => (ushort) (Data?.Length ?? 0);
 
-		internal override void EncodeData(IList<byte> messageData, ref int currentPosition)
+		internal override void EncodeData(byte[] messageData, ref int currentPosition)
 		{
 			DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, Data);
 		}

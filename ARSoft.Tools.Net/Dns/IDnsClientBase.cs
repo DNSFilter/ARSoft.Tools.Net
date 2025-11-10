@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -18,24 +18,14 @@
 
 namespace ARSoft.Tools.Net.Dns
 {
-	/// <summary>
-	///   Flags of the <see cref="NSec3Record" />
-	/// </summary>
-	[Flags]
-	public enum NSec3Flags : byte
-	{
-		/// <summary>
-		///   None
-		/// </summary>
-		None = 0,
-
-		/// <summary>
-		///   <para>Opt-Out</para>
-		///   <para>
-		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc5155.html">RFC 5155</a>.
-		///   </para>
-		/// </summary>
-		OptOut = 1
-	}
+    /// <summary>
+    ///   Defines a client base for querying dns records
+    /// </summary>
+    public interface IDnsClientBase
+    {
+        /// <summary>
+        /// Gets or sets a value indicating whether the DNS server is allow ENDS options or not.
+        /// </summary>
+        bool IsEDnsEnabled { get; set; }
+    }
 }

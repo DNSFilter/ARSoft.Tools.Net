@@ -1,7 +1,7 @@
-﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+#region Copyright and License
+// Copyright 2010..2014 Alexander Reinert
 // 
-// This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
+// This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (http://arsofttoolsnet.codeplex.com/)
 // 
 // Licensed under the Apache License, Version 2.0 (the "License");
 // you may not use this file except in compliance with the License.
@@ -16,12 +16,15 @@
 // limitations under the License.
 #endregion
 
-namespace ARSoft.Tools.Net.Dns;
+using System;
 
-internal static class DnsMessageBaseExtensions
+namespace ARSoft.Tools.Net.Dns
 {
-	public static TimeSpan? GetEDnsKeepAliveTimeout(this DnsMessageBase message)
+	internal class DnsClientParallelState<TMessage>
+		where TMessage : DnsMessageBase
 	{
-		return message.EDnsOptions?.Options?.OfType<TcpKeepAliveOption>()?.FirstOrDefault()?.Timeout;
+		internal object Lock = new object();
+		internal IAsyncResult SingleMessageAsyncResult;
+		internal DnsClientParallelAsyncState<TMessage> ParallelMessageAsyncState;
 	}
 }

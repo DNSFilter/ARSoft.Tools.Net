@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -32,7 +32,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>No error</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		NoError = 0,
@@ -41,7 +41,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Format error</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		FormatError = 1,
@@ -50,7 +50,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Server failure</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		ServerFailure = 2,
@@ -59,7 +59,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Non-existent domain</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		NxDomain = 3,
@@ -68,7 +68,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Not implemented</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		NotImplemented = 4,
@@ -77,7 +77,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Query refused</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		Refused = 5,
@@ -86,7 +86,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Name exists when it should not</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2136.html">RFC 2136</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2136">RFC 2136</see>
 		///   </para>
 		/// </summary>
 		// ReSharper disable once InconsistentNaming
@@ -96,7 +96,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Record exists when it should not</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2136.html">RFC 2136</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2136">RFC 2136</see>
 		///   </para>
 		/// </summary>
 		// ReSharper disable once InconsistentNaming
@@ -106,7 +106,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Record that should exist does not</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2136.html">RFC 2136</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2136">RFC 2136</see>
 		///   </para>
 		/// </summary>
 		// ReSharper disable once InconsistentNaming
@@ -116,7 +116,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Server is not authoritative for zone</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2136.html">RFC 2136</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2136">RFC 2136</see>
 		///   </para>
 		/// </summary>
 		NotAuthoritive = 9,
@@ -125,7 +125,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Name not contained in zone</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2136.html">RFC 2136</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2136">RFC 2136</see>
 		///   </para>
 		/// </summary>
 		NotZone = 10,
@@ -134,8 +134,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>EDNS version is not supported by responder</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2671.html">RFC 2671</a>
-		///     and <a href="https://www.rfc-editor.org/rfc/rfc6891.html">RFC 6891</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2671">RFC 2671</see>
 		///   </para>
 		/// </summary>
 		BadVersion = 16,
@@ -144,7 +143,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>TSIG signature failure</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2845.html">RFC 2845</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2845">RFC 2845</see>
 		///   </para>
 		/// </summary>
 		BadSig = 16,
@@ -153,7 +152,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Key not recognized</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2845.html">RFC 2845</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2845">RFC 2845</see>
 		///   </para>
 		/// </summary>
 		BadKey = 17,
@@ -162,7 +161,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Signature out of time window</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2845.html">RFC 2845</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2845">RFC 2845</see>
 		///   </para>
 		/// </summary>
 		BadTime = 18,
@@ -171,7 +170,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Bad TKEY mode</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2930.html">RFC 2930</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2930">RFC 2930</see>
 		///   </para>
 		/// </summary>
 		BadMode = 19,
@@ -180,7 +179,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Duplicate key name</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2930.html">RFC 2930</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2930">RFC 2930</see>
 		///   </para>
 		/// </summary>
 		BadName = 20,
@@ -189,7 +188,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Algorithm not supported</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2930.html">RFC 2930</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2930">RFC 2930</see>
 		///   </para>
 		/// </summary>
 		BadAlg = 21,
@@ -198,7 +197,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Bad truncation of TSIG record</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4635.html">RFC 4635</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4635">RFC 4635</see>
 		///   </para>
 		/// </summary>
 		BadTrunc = 22,
@@ -207,7 +206,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Bad/missing server cookie</para>
 		///   <para>
 		///     Defined in
-		///     <a href="http://tools.ietf.org/html/draft-ietf-dnsop-cookies">draft-ietf-dnsop-cookies</a>
+		///     <see cref="!:http://tools.ietf.org/html/draft-ietf-dnsop-cookies">draft-ietf-dnsop-cookies</see>
 		///   </para>
 		/// </summary>
 		BadCookie = 23,

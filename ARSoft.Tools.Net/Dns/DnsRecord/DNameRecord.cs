@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,7 +27,7 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>DNS Name Redirection record</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc6672.html">RFC 6672</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc6672">RFC 6672</see>
 	///   </para>
 	/// </summary>
 	public class DNameRecord : DnsRecordBase
@@ -37,20 +37,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		public DomainName Target { get; private set; }
 
-		internal DNameRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			Target = DnsMessageBase.ParseDomainName(resultData, ref currentPosition);
-		}
-
-		internal DNameRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			if (stringRepresentation.Length != 1)
-				throw new FormatException();
-
-			Target = ParseDomainName(origin, stringRepresentation[0]);
-		}
+		internal DNameRecord() {}
 
 		/// <summary>
 		///   Creates a new instance of the DNameRecord class
@@ -64,16 +51,29 @@ namespace ARSoft.Tools.Net.Dns
 			Target = target ?? DomainName.Root;
 		}
 
+		internal override void ParseRecordData(byte[] resultData, int startPosition, int length)
+		{
+			Target = DnsMessageBase.ParseDomainName(resultData, ref startPosition);
+		}
+
+		internal override void ParseRecordData(DomainName origin, string[] stringRepresentation)
+		{
+			if (stringRepresentation.Length != 1)
+				throw new FormatException();
+
+			Target = ParseDomainName(origin, stringRepresentation[0]);
+		}
+
 		internal override string RecordDataToString()
 		{
-			return Target.ToString(true);
+			return Target.ToString();
 		}
 
 		protected internal override int MaximumRecordDataLength => Target.MaximumRecordDataLength + 2;
 
-		protected internal override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
+		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
 		{
-			DnsMessageBase.EncodeDomainName(messageData, ref currentPosition, Target, null, useCanonical);
+			DnsMessageBase.EncodeDomainName(messageData, offset, ref currentPosition, Target, null, useCanonical);
 		}
 	}
 }

@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -19,7 +19,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
 
 namespace ARSoft.Tools.Net.Dns
@@ -28,13 +27,13 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>Security Key</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc4034.html">RFC 4034</a>
+	///     <see cref="!:http://tools.ietf.org/html/rfc4034">RFC 4034</see>
 	///     ,
-	///     <a href="https://www.rfc-editor.org/rfc/rfc3755.html">RFC 3755</a>
+	///     <see cref="!:http://tools.ietf.org/html/rfc3755">RFC 3755</see>
 	///     ,
-	///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>
+	///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 	///     and
-	///     <a href="https://www.rfc-editor.org/rfc/rfc2930.html">RFC 2930</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc2930">RFC 2930</see>
 	///   </para>
 	/// </summary>
 	public abstract class KeyRecordBase : DnsRecordBase
@@ -42,14 +41,13 @@ namespace ARSoft.Tools.Net.Dns
 		/// <summary>
 		///   Type of key
 		/// </summary>
-		[Flags]
 		public enum KeyTypeFlag : ushort
 		{
 			/// <summary>
 			///   <para>Use of the key is prohibited for authentication</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			AuthenticationProhibited = 0x8000,
@@ -58,7 +56,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Use of the key is prohibited for confidentiality</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			ConfidentialityProhibited = 0x4000,
@@ -67,7 +65,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Use of the key for authentication and/or confidentiality is permitted</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			BothProhibited = 0x0000,
@@ -76,7 +74,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>There is no key information</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			NoKey = 0xc000,
@@ -91,7 +89,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Key is associated with a user or account</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			User = 0x0000,
@@ -100,7 +98,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Key is associated with a zone</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			Zone = 0x0100,
@@ -109,7 +107,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Key is associated with a host</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			Host = 0x0200,
@@ -118,7 +116,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Reserved</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			Reserved = 0x0300,
@@ -133,7 +131,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Use in connection with TLS</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			Tls = 1,
@@ -142,7 +140,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Use in connection with email</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			Email = 2,
@@ -151,7 +149,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Used for DNS security</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			DnsSec = 3,
@@ -160,7 +158,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Refer to the Oakley/IPSEC  protocol</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			IpSec = 4,
@@ -169,7 +167,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Used in connection with any protocol</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 			///   </para>
 			/// </summary>
 			Any = 255,
@@ -313,13 +311,7 @@ namespace ARSoft.Tools.Net.Dns
 		}
 		#endregion
 
-		protected KeyRecordBase(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			Flags = DnsMessageBase.ParseUShort(resultData, ref currentPosition);
-			Protocol = (ProtocolType) resultData[currentPosition++];
-			Algorithm = (DnsSecAlgorithm) resultData[currentPosition++];
-		}
+		protected KeyRecordBase() {}
 
 		protected KeyRecordBase(DomainName name, RecordClass recordClass, int timeToLive, ushort flags, ProtocolType protocol, DnsSecAlgorithm algorithm)
 			: base(name, RecordType.Key, recordClass, timeToLive)
@@ -329,18 +321,17 @@ namespace ARSoft.Tools.Net.Dns
 			Algorithm = algorithm;
 		}
 
-		protected KeyRecordBase(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
-			: base(name, recordType, recordClass, timeToLive)
+		internal override sealed void ParseRecordData(byte[] resultData, int startPosition, int length)
 		{
-			if (stringRepresentation.Length < 4)
-				throw new FormatException();
-
-			Flags = UInt16.Parse(stringRepresentation[0]);
-			Protocol = (ProtocolType) Byte.Parse(stringRepresentation[1]);
-			Algorithm = (DnsSecAlgorithm) Byte.Parse(stringRepresentation[2]);
+			Flags = DnsMessageBase.ParseUShort(resultData, ref startPosition);
+			Protocol = (ProtocolType) resultData[startPosition++];
+			Algorithm = (DnsSecAlgorithm) resultData[startPosition++];
+			ParsePublicKey(resultData, startPosition, length - 4);
 		}
 
-		internal sealed override string RecordDataToString()
+		protected abstract void ParsePublicKey(byte[] resultData, int startPosition, int length);
+
+		internal override sealed string RecordDataToString()
 		{
 			return Flags
 			       + " " + (byte) Protocol
@@ -350,18 +341,18 @@ namespace ARSoft.Tools.Net.Dns
 
 		protected abstract string PublicKeyToString();
 
-		protected internal sealed override int MaximumRecordDataLength => 4 + MaximumPublicKeyLength;
+		protected internal override sealed int MaximumRecordDataLength => 4 + MaximumPublicKeyLength;
 
 		protected abstract int MaximumPublicKeyLength { get; }
 
-		protected internal sealed override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
+		protected internal override sealed void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
 		{
 			DnsMessageBase.EncodeUShort(messageData, ref currentPosition, Flags);
 			messageData[currentPosition++] = (byte) Protocol;
 			messageData[currentPosition++] = (byte) Algorithm;
-			EncodePublicKey(messageData, ref currentPosition, domainNames);
+			EncodePublicKey(messageData, offset, ref currentPosition, domainNames);
 		}
 
-		protected abstract void EncodePublicKey(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames);
+		protected abstract void EncodePublicKey(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames);
 	}
 }

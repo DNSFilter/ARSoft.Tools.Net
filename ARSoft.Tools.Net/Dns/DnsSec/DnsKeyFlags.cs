@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -20,9 +20,6 @@ using System;
 
 namespace ARSoft.Tools.Net.Dns
 {
-	/// <summary>
-	///   Flags of <see cref="DnsKeyRecord" />
-	/// </summary>
 	[Flags]
 	public enum DnsKeyFlags : ushort
 	{
@@ -30,9 +27,9 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>ZONE</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3755.html">RFC 3755</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc3755">RFC 3755</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4034.html">RFC 4034</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4034">RFC 4034</see>
 		///   </para>
 		/// </summary>
 		Zone = 256,
@@ -41,7 +38,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>REVOKE</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc5011.html">RFC 5011</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc5011">RFC 5011</see>
 		///   </para>
 		/// </summary>
 		Revoke = 128,
@@ -50,9 +47,9 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Secure Entry Point (SEP)</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3755.html">RFC 3755</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc3755">RFC 3755</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4034.html">RFC 4034</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4034">RFC 4034</see>
 		///   </para>
 		/// </summary>
 		SecureEntryPoint = 1

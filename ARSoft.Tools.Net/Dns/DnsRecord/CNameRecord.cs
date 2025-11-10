@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,7 +27,7 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>Canonical name for an alias</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 	///   </para>
 	/// </summary>
 	public class CNameRecord : DnsRecordBase
@@ -37,21 +37,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		public DomainName CanonicalName { get; private set; }
 
-		internal CNameRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			CanonicalName = DnsMessageBase.ParseDomainName(resultData, ref currentPosition);
-		}
-
-
-		internal CNameRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			if (stringRepresentation.Length != 1)
-				throw new FormatException();
-
-			CanonicalName = ParseDomainName(origin, stringRepresentation[0]);
-		}
+		internal CNameRecord() {}
 
 		/// <summary>
 		///   Creates a new instance of the CNameRecord class
@@ -65,16 +51,29 @@ namespace ARSoft.Tools.Net.Dns
 			CanonicalName = canonicalName ?? DomainName.Root;
 		}
 
+		internal override void ParseRecordData(byte[] resultData, int startPosition, int length)
+		{
+			CanonicalName = DnsMessageBase.ParseDomainName(resultData, ref startPosition);
+		}
+
+		internal override void ParseRecordData(DomainName origin, string[] stringRepresentation)
+		{
+			if (stringRepresentation.Length != 1)
+				throw new FormatException();
+
+			CanonicalName = ParseDomainName(origin, stringRepresentation[0]);
+		}
+
 		internal override string RecordDataToString()
 		{
-			return CanonicalName.ToString(true);
+			return CanonicalName.ToString();
 		}
 
 		protected internal override int MaximumRecordDataLength => CanonicalName.MaximumRecordDataLength + 2;
 
-		protected internal override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
+		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
 		{
-			DnsMessageBase.EncodeDomainName(messageData, ref currentPosition, CanonicalName, domainNames, useCanonical);
+			DnsMessageBase.EncodeDomainName(messageData, offset, ref currentPosition, CanonicalName, domainNames, useCanonical);
 		}
 	}
 }

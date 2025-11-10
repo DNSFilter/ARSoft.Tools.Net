@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -38,23 +38,17 @@ namespace ARSoft.Tools.Net.Dns
 		/// <summary>
 		///   Protocol used by the client
 		/// </summary>
-		[Obsolete("Use property TransportProtocol instead")]
-		public ProtocolType ProtocolType => TransportProtocol.ToProtocolType();
-
-		/// <summary>
-		///   Protocol used by the client
-		/// </summary>
-		public TransportProtocol TransportProtocol { get; private set; }
+		public ProtocolType ProtocolType { get; private set; }
 
 		/// <summary>
 		///   Remote endpoint of the client
 		/// </summary>
 		public IPEndPoint RemoteEndpoint { get; private set; }
 
-		internal InvalidSignedMessageEventArgs(DnsMessageBase query, TransportProtocol transportProtocol, IPEndPoint remoteEndpoint)
+		internal InvalidSignedMessageEventArgs(DnsMessageBase query, ProtocolType protocolType, IPEndPoint remoteEndpoint)
 		{
 			Query = query;
-			TransportProtocol = transportProtocol;
+			ProtocolType = protocolType;
 			RemoteEndpoint = remoteEndpoint;
 		}
 	}

@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -30,31 +30,33 @@ namespace ARSoft.Tools.Net.Dns
 	public abstract class UpdateableResolverHintStoreBase : IResolverHintStore
 	{
 		private bool _isInitiated;
-		private List<IPAddress>? _rootServers;
-		private List<DsRecord>? _rootKeys;
+		private List<IPAddress> _rootServers;
+		private List<DsRecord> _rootKeys;
 
 		/// <summary>
 		///   List of hints to the root servers
 		/// </summary>
-		public IReadOnlyList<IPAddress> RootServers
+		public List<IPAddress> RootServers
 		{
 			get
 			{
 				EnsureInit();
-				return _rootServers!;
+				return _rootServers;
 			}
+			private set { _rootServers = value; }
 		}
 
 		/// <summary>
 		///   List of DsRecords of the root zone
 		/// </summary>
-		public IReadOnlyList<DsRecord> RootKeys
+		public List<DsRecord> RootKeys
 		{
 			get
 			{
 				EnsureInit();
-				return _rootKeys!;
+				return _rootKeys;
 			}
+			private set { _rootKeys = value; }
 		}
 
 		/// <summary>
@@ -95,9 +97,9 @@ namespace ARSoft.Tools.Net.Dns
 
 		private void LoadZoneInternal(Zone zone)
 		{
-			var nameServers = zone.OfType<NsRecord>().Where(x => x.Name.IsRoot).Select(x => x.NameServer);
-			_rootServers = zone.Where(x => x.RecordType == RecordType.A || x.RecordType == RecordType.Aaaa).Join(nameServers, x => x.Name, x => x, (x, y) => ((IAddressRecord) x).Address).ToList();
-			_rootKeys = zone.OfType<DnsKeyRecord>().Where(x => (x.Name.IsRoot) && x.IsSecureEntryPoint).Select(x => new DsRecord(x, x.TimeToLive, DnsSecDigestType.Sha256)).ToList();
+			var nameServers = zone.OfType<NsRecord>().Where(x => x.Name == DomainName.Root).Select(x => x.NameServer);
+			RootServers = zone.Where(x => x.RecordType == RecordType.A || x.RecordType == RecordType.Aaaa).Join(nameServers, x => x.Name, x => x, (x, y) => ((IAddressRecord) x).Address).ToList();
+			RootKeys = zone.OfType<DnsKeyRecord>().Where(x => (x.Name == DomainName.Root) && x.IsSecureEntryPoint).Select(x => new DsRecord(x, x.TimeToLive, DnsSecDigestType.Sha256)).ToList();
 		}
 
 		/// <summary>

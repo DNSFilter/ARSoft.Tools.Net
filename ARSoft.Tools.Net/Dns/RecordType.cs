@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -17,16 +17,13 @@
 #endregion
 
 using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace ARSoft.Tools.Net.Dns
 {
-	/// <summary>
-	///   Type of record
-	/// </summary>
-	public enum RecordType : ushort
+    /// <summary>
+    ///   Type of record
+    /// </summary>
+    public enum RecordType : ushort
 	{
 		/// <summary>
 		///   Invalid record type
@@ -37,7 +34,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Host address</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		A = 1,
@@ -46,7 +43,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Authoritatitve name server</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		Ns = 2,
@@ -55,25 +52,27 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Mail destination</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
-		[Obsolete] Md = 3,
+		[Obsolete]
+		Md = 3,
 
 		/// <summary>
 		///   <para>Mail forwarder</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
-		[Obsolete] Mf = 4,
+		[Obsolete]
+		Mf = 4,
 
 		/// <summary>
 		///   <para>Canonical name for an alias</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		CName = 5,
@@ -82,7 +81,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Start of zone of authority</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		Soa = 6,
@@ -91,7 +90,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Mailbox domain name</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///     - Experimental
 		///   </para>
 		/// </summary>
@@ -101,7 +100,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Mail group member</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///     - Experimental
 		///   </para>
 		/// </summary>
@@ -111,7 +110,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Mail rename domain name</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///     - Experimental
 		///   </para>
 		/// </summary>
@@ -121,7 +120,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Null record</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///     - Experimental
 		///   </para>
 		/// </summary>
@@ -131,7 +130,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Well known services</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		Wks = 11,
@@ -140,7 +139,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Domain name pointer</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		Ptr = 12,
@@ -149,7 +148,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Host information</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		HInfo = 13,
@@ -158,7 +157,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Mailbox or mail list information</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		MInfo = 14, // not supported yet
@@ -167,7 +166,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Mail exchange</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		Mx = 15,
@@ -176,7 +175,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Text strings</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		Txt = 16,
@@ -185,7 +184,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Responsible person</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1183.html">RFC 1183</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1183">RFC 1183</see>
 		///   </para>
 		/// </summary>
 		Rp = 17,
@@ -194,9 +193,9 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>AFS data base location</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1183.html">RFC 1183</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc1183">RFC 1183</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc5864.html">RFC 5864</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc5864">RFC 5864</see>
 		///   </para>
 		/// </summary>
 		Afsdb = 18,
@@ -205,7 +204,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>X.25 PSDN address</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1183.html">RFC 1183</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1183">RFC 1183</see>
 		///   </para>
 		/// </summary>
 		X25 = 19,
@@ -214,7 +213,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>ISDN address</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1183.html">RFC 1183</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1183">RFC 1183</see>
 		///   </para>
 		/// </summary>
 		Isdn = 20,
@@ -223,7 +222,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Route through</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1183.html">RFC 1183</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1183">RFC 1183</see>
 		///   </para>
 		/// </summary>
 		Rt = 21,
@@ -232,7 +231,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>NSAP address, NSAP style A record</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1706.html">RFC 1706</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1706">RFC 1706</see>
 		///   </para>
 		/// </summary>
 		Nsap = 22,
@@ -241,11 +240,11 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Domain name pointer, NSAP style</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1348.html">RFC 1348</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc1348">RFC 1348</see>
 		///     ,
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1637.html">RFC 1637</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc1637">RFC 1637</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1706.html">RFC 1706</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1706">RFC 1706</see>
 		///   </para>
 		/// </summary>
 		NsapPtr = 23, // not supported yet
@@ -254,13 +253,13 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Security signature</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4034.html">RFC 4034</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc4034">RFC 4034</see>
 		///     ,
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3755.html">RFC 3755</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc3755">RFC 3755</see>
 		///     ,
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2931.html">RFC 2931</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2931">RFC 2931</see>
 		///   </para>
 		/// </summary>
 		Sig = 24,
@@ -269,13 +268,13 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Security Key</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4034.html">RFC 4034</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc4034">RFC 4034</see>
 		///     ,
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3755.html">RFC 3755</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc3755">RFC 3755</see>
 		///     ,
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2930.html">RFC 2930</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2930">RFC 2930</see>
 		///   </para>
 		/// </summary>
 		Key = 25,
@@ -284,7 +283,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>X.400 mail mapping information</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2163.html">RFC 2163</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2163">RFC 2163</see>
 		///   </para>
 		/// </summary>
 		Px = 26,
@@ -293,7 +292,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Geographical position</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1712.html">RFC 1712</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1712">RFC 1712</see>
 		///   </para>
 		/// </summary>
 		GPos = 27,
@@ -302,7 +301,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>IPv6 address</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3596.html">RFC 3596</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc3596">RFC 3596</see>
 		///   </para>
 		/// </summary>
 		Aaaa = 28,
@@ -311,7 +310,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Location information</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1876.html">RFC 1876</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1876">RFC 1876</see>
 		///   </para>
 		/// </summary>
 		Loc = 29,
@@ -320,12 +319,13 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Next domain</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3755.html">RFC 3755</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc3755">RFC 3755</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2535.html">RFC 2535</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2535">RFC 2535</see>
 		///   </para>
 		/// </summary>
-		[Obsolete] Nxt = 30,
+		[Obsolete]
+		Nxt = 30,
 
 		/// <summary>
 		///   <para>Endpoint identifier</para>
@@ -343,7 +343,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Server selector</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2782.html">RFC 2782</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2782">RFC 2782</see>
 		///   </para>
 		/// </summary>
 		Srv = 33,
@@ -352,9 +352,10 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>ATM address</para>
 		///   <para>
 		///     Defined in
-		///     <a href="http://broadband-forum.org/ftp/pub/approved-specs/af-saa-0069.000.pdf">
-		///       ATM Forum Technical Committee, "ATM Name System, V2.0"
-		///     </a>
+		///     <see cref="!:http://broadband-forum.org/ftp/pub/approved-specs/af-saa-0069.000.pdf">
+		///       ATM Forum Technical Committee,
+		///       "ATM Name System, V2.0"
+		///     </see>
 		///   </para>
 		/// </summary>
 		AtmA = 34, // not supported yet
@@ -363,11 +364,11 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Naming authority pointer</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2915.html">RFC 2915</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc2915">RFC 2915</see>
 		///     ,
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2168.html">RFC 2168</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc2168">RFC 2168</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3403.html">RFC 3403</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc3403">RFC 3403</see>
 		///   </para>
 		/// </summary>
 		Naptr = 35,
@@ -376,7 +377,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Key exchanger</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2230.html">RFC 2230</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2230">RFC 2230</see>
 		///   </para>
 		/// </summary>
 		Kx = 36,
@@ -385,7 +386,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Certificate storage</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4398.html">RFC 4398</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4398">RFC 4398</see>
 		///   </para>
 		/// </summary>
 		Cert = 37,
@@ -394,21 +395,22 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>A6</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3226.html">RFC 3226</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc3226">RFC 3226</see>
 		///     ,
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2874.html">RFC 2874</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc2874">RFC 2874</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2874.html">RFC 2874</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6563">RFC 2874</see>
 		///     - Experimental
 		///   </para>
 		/// </summary>
-		[Obsolete] A6 = 38,
+		[Obsolete]
+		A6 = 38,
 
 		/// <summary>
 		///   <para>DNS Name Redirection</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6672.html">RFC 6672</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6672">RFC 6672</see>
 		///   </para>
 		/// </summary>
 		DName = 39,
@@ -423,9 +425,9 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>OPT</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6891.html">RFC 6891</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc6891">RFC 6891</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3658.html">RFC 3658</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc3225">RFC 3658</see>
 		///   </para>
 		/// </summary>
 		Opt = 41,
@@ -434,7 +436,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Address prefixes</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3123.html">RFC 3123</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc3123">RFC 3123</see>
 		///   </para>
 		/// </summary>
 		Apl = 42,
@@ -443,9 +445,9 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Delegation signer</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4034.html">RFC 4034</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc4034">RFC 4034</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3658.html">RFC 3658</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc3658">RFC 3658</see>
 		///   </para>
 		/// </summary>
 		Ds = 43,
@@ -454,7 +456,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>SSH key fingerprint</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4255.html">RFC 4255</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4255">RFC 4255</see>
 		///   </para>
 		/// </summary>
 		SshFp = 44,
@@ -463,7 +465,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>IPsec key storage</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4025.html">RFC 4025</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4025">RFC 4025</see>
 		///   </para>
 		/// </summary>
 		IpSecKey = 45,
@@ -472,9 +474,9 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Record signature</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4034.html">RFC 4034</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc4034">RFC 4034</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3755.html">RFC 3755</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc3755">RFC 3755</see>
 		///   </para>
 		/// </summary>
 		RrSig = 46,
@@ -483,9 +485,9 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Next owner</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4034.html">RFC 4034</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc4034">RFC 4034</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3755.html">RFC 3755</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc3755">RFC 3755</see>
 		///   </para>
 		/// </summary>
 		NSec = 47,
@@ -494,9 +496,9 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>DNS Key</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4034.html">RFC 4034</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc4034">RFC 4034</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3755.html">RFC 3755</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc3755">RFC 3755</see>
 		///   </para>
 		/// </summary>
 		DnsKey = 48,
@@ -505,7 +507,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Dynamic Host Configuration Protocol (DHCP) Information</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4701.html">RFC 4701</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4701">RFC 4701</see>
 		///   </para>
 		/// </summary>
 		Dhcid = 49,
@@ -514,7 +516,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Hashed next owner</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc5155.html">RFC 5155</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc5155">RFC 5155</see>
 		///   </para>
 		/// </summary>
 		NSec3 = 50,
@@ -523,7 +525,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Hashed next owner parameter</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc5155.html">RFC 5155</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc5155">RFC 5155</see>
 		///   </para>
 		/// </summary>
 		NSec3Param = 51,
@@ -532,26 +534,16 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>TLSA</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6698.html">RFC 6698</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6698">RFC 6698</see>
 		///   </para>
 		/// </summary>
 		Tlsa = 52,
 
 		/// <summary>
-		///   <para>SMIMEA</para>
-		///   <para>
-		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc8162.html">RFC 8162</a>.
-		///   </para>
-		/// </summary>
-		SMimeA = 53,
-
-		/// <summary>
 		///   <para>Host identity protocol</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc5205.html">RFC 5205</a>
-		///     and <a href="https://www.rfc-editor.org/rfc/rfc8005.html">RFC 8005</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc5205">RFC 5205</see>
 		///   </para>
 		/// </summary>
 		Hip = 55,
@@ -579,7 +571,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Child DS</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7344.html">RFC 7344</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc7344">RFC 7344</see>
 		///   </para>
 		/// </summary>
 		CDs = 59,
@@ -588,7 +580,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Child DnsKey</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7344.html">RFC 7344</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc7344">RFC 7344</see>
 		///   </para>
 		/// </summary>
 		CDnsKey = 60,
@@ -597,7 +589,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>OpenPGP Key</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7929.html">RFC 7929</a>.
+		///     <see cref="!:http://tools.ietf.org/html/draft-ietf-dane-openpgpkey">draft-ietf-dane-openpgpkey</see>
 		///   </para>
 		/// </summary>
 		// ReSharper disable once InconsistentNaming
@@ -607,35 +599,25 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Child-to-Parent Synchronization</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7477.html">RFC 7477</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc7477">RFC 7477</see>
 		///   </para>
 		/// </summary>
 		CSync = 62,
 
 		/// <summary>
-		///   <para>ZONEMD</para>
+		///   <para>Service binding</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc8976.html">RFC 8976</a>.
+		///     <see cref="!:https://datatracker.ietf.org/doc/draft-ietf-dnsop-svcb-https/">DNSOP Working group and Akamai technologies</see>
 		///   </para>
 		/// </summary>
-		// ReSharper disable once InconsistentNaming
-		ZoneMD = 63,
+		Svcb = 64,
 
 		/// <summary>
-		///   <para>Service Binding</para>
+		///   <para>HTTPS binding</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://datatracker.ietf.org/doc/draft-ietf-dnsop-svcb-https/12/">draft-ietf-dnsop-svcb-https</a>.
-		///   </para>
-		/// </summary>
-		SvcB = 64,
-
-		/// <summary>
-		///   <para>HTTPS Service Binding</para>
-		///   <para>
-		///     Defined in
-		///     <a href="https://datatracker.ietf.org/doc/draft-ietf-dnsop-svcb-https/12/">draft-ietf-dnsop-svcb-https</a>.
+		///     <see cref="!:https://datatracker.ietf.org/doc/draft-ietf-dnsop-svcb-https/">DNSOP Working group and Akamai technologies</see>
 		///   </para>
 		/// </summary>
 		Https = 65,
@@ -644,12 +626,13 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Sender Policy Framework</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4408.html">RFC 4408</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc4408">RFC 4408</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7208.html">RFC 7208</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc7208">RFC 7208</see>
 		///   </para>
 		/// </summary>
-		[Obsolete] Spf = 99,
+		[Obsolete]
+		Spf = 99,
 
 		/// <summary>
 		///   <para>UINFO</para>
@@ -679,7 +662,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>NID</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6742.html">RFC 6742</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6742">RFC 6742</see>
 		///   </para>
 		/// </summary>
 		NId = 104,
@@ -688,7 +671,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>L32</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6742.html">RFC 6742</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6742">RFC 6742</see>
 		///   </para>
 		/// </summary>
 		L32 = 105,
@@ -697,7 +680,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>L64</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6742.html">RFC 6742</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6742">RFC 6742</see>
 		///   </para>
 		/// </summary>
 		L64 = 106,
@@ -706,7 +689,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>LP</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6742.html">RFC 6742</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6742">RFC 6742</see>
 		///   </para>
 		/// </summary>
 		// ReSharper disable once InconsistentNaming
@@ -716,7 +699,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>EUI-48 address</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7043.html">RFC 7043</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc7043">RFC 7043</see>
 		///   </para>
 		/// </summary>
 		Eui48 = 108,
@@ -725,7 +708,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>EUI-64 address</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7043.html">RFC 7043</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc7043">RFC 7043</see>
 		///   </para>
 		/// </summary>
 		Eui64 = 109,
@@ -734,7 +717,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Transaction key</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2930.html">RFC 2930</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2930">RFC 2930</see>
 		///   </para>
 		/// </summary>
 		// ReSharper disable once InconsistentNaming
@@ -744,9 +727,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Transaction signature</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2845.html">RFC 2845</a>,
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4635.html">RFC 4635</a>
-		///     and <a href="https://www.rfc-editor.org/rfc/rfc8945.html">RFC 8945</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc2845">RFC 2845</see>
 		///   </para>
 		/// </summary>
 		// ReSharper disable once InconsistentNaming
@@ -756,7 +737,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Incremental zone transfer</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1995.html">RFC 1995</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1995">RFC 1995</see>
 		///   </para>
 		/// </summary>
 		Ixfr = 251,
@@ -765,9 +746,9 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Request transfer of entire zone</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc5936.html">RFC 5936</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc5936">RFC 5936</see>
 		///   </para>
 		/// </summary>
 		Axfr = 252,
@@ -776,7 +757,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Request mailbox related recors</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		MailB = 253,
@@ -785,16 +766,17 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Request of mail agent records</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
-		[Obsolete] MailA = 254,
+		[Obsolete]
+		MailA = 254,
 
 		/// <summary>
 		///   <para>Request of all records</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		Any = 255,
@@ -803,30 +785,20 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Uniform Resource Identifier</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7553.html">RFC 7553</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc7553">RFC 7553</see>
 		///   </para>
 		/// </summary>
 		Uri = 256,
 
 		/// <summary>
-		///   <para>Certification authority authorization</para>
+		///   <para>Certification authority auhtorization</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6844.html">RFC 6844</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6844">RFC 6844</see>
 		///   </para>
 		/// </summary>
 		// ReSharper disable once InconsistentNaming
 		CAA = 257,
-
-		/// <summary>
-		///   <para>Automatic Multicast Tunneling Relay</para>
-		///   <para>
-		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc8777.html">RFC 8777</a>.
-		///   </para>
-		/// </summary>
-		// ReSharper disable once InconsistentNaming
-		AMTRelay = 260,
 
 		/// <summary>
 		///   <para>DNSSEC trust authorities</para>
@@ -838,24 +810,21 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>DNSSEC lookaside validation</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4431.html">RFC 4431</a>
-		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc8749.html">RFC 8749</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4431">RFC 4431</see>
 		///   </para>
 		/// </summary>
-		[Obsolete] Dlv = 32769,
+		Dlv = 32769,
 	}
 
 	internal static class RecordTypeHelper
 	{
 		public static string ToShortString(this RecordType recordType)
 		{
-			string? res;
+			string res;
 			if (!EnumHelper<RecordType>.Names.TryGetValue(recordType, out res))
 			{
 				return "TYPE" + (int) recordType;
 			}
-
 			return res.ToUpper();
 		}
 
@@ -879,7 +848,6 @@ namespace ARSoft.Tools.Net.Dns
 					return true;
 				}
 			}
-
 			recordType = RecordType.Invalid;
 			return false;
 		}

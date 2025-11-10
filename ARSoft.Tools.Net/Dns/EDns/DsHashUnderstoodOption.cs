@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,41 +27,43 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>DS Hash Understood option</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc6975.html">RFC 6975</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc6975">RFC 6975</see>
 	///   </para>
 	/// </summary>
 	public class DsHashUnderstoodOption : EDnsOptionBase
 	{
 		/// <summary>
-		///   List of Digests
+		///   List of Algorithms
 		/// </summary>
-		public List<DnsSecDigestType> Digests { get; private set; }
+		public List<DnsSecAlgorithm> Algorithms { get; private set; }
 
-		internal DsHashUnderstoodOption(IList<byte> resultData, int startPosition, int length)
-			: base(EDnsOptionType.DsHashUnderstood)
-		{
-			Digests = new List<DnsSecDigestType>(length);
-			for (int i = 0; i < length; i++)
-			{
-				Digests.Add((DnsSecDigestType) resultData[startPosition++]);
-			}
-		}
+		internal DsHashUnderstoodOption()
+			: base(EDnsOptionType.DsHashUnderstood) {}
 
 		/// <summary>
 		///   Creates a new instance of the DsHashUnderstoodOption class
 		/// </summary>
-		/// <param name="digests">The list of digests</param>
-		public DsHashUnderstoodOption(params DnsSecDigestType[] digests)
-			: base(EDnsOptionType.DsHashUnderstood)
+		/// <param name="algorithms">The list of algorithms</param>
+		public DsHashUnderstoodOption(List<DnsSecAlgorithm> algorithms)
+			: this()
 		{
-			Digests = digests.ToList();
+			Algorithms = algorithms;
 		}
 
-		internal override ushort DataLength => (ushort) (Digests?.Count ?? 0);
-
-		internal override void EncodeData(IList<byte> messageData, ref int currentPosition)
+		internal override void ParseData(byte[] resultData, int startPosition, int length)
 		{
-			foreach (var algorithm in Digests)
+			Algorithms = new List<DnsSecAlgorithm>(length);
+			for (int i = 0; i < length; i++)
+			{
+				Algorithms.Add((DnsSecAlgorithm) resultData[startPosition++]);
+			}
+		}
+
+		internal override ushort DataLength => (ushort) (Algorithms?.Count ?? 0);
+
+		internal override void EncodeData(byte[] messageData, ref int currentPosition)
+		{
+			foreach (var algorithm in Algorithms)
 			{
 				messageData[currentPosition++] = (byte) algorithm;
 			}

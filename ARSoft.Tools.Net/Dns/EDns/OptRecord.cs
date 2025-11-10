@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,8 +27,7 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>OPT record</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc2671.html">RFC 2671</a>
-	///     and <a href="https://www.rfc-editor.org/rfc/rfc6891.html">RFC 6891</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc2671">RFC 2671</see>
 	///   </para>
 	/// </summary>
 	public class OptRecord : DnsRecordBase
@@ -72,9 +71,9 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Gets or sets the DNSSEC OK (DO) flag</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4035.html">RFC 4035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4035">RFC 4035</see>
 		///     and
-		///     <a href="https://www.rfc-editor.org/rfc/rfc3225.html">RFC 3225</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc3225">RFC 3225</see>
 		///   </para>
 		/// </summary>
 		public bool IsDnsSecOk
@@ -101,89 +100,79 @@ namespace ARSoft.Tools.Net.Dns
 		/// <summary>
 		///   Creates a new instance of the OptRecord
 		/// </summary>
-		/// <param name="udpPayloadSize">The sender's UDP payload size</param>
-		/// <param name="options">Additional EDNS options</param>
-		public OptRecord(ushort udpPayloadSize = 4096, params EDnsOptionBase[] options)
-			: base(DomainName.Root, RecordType.Opt, unchecked((RecordClass) udpPayloadSize), 0)
+		public OptRecord()
+			: base(DomainName.Root, RecordType.Opt, unchecked((RecordClass) 512), 0)
 		{
-			Options = options.ToList();
+			UdpPayloadSize = 4096;
+			Options = new List<EDnsOptionBase>();
 		}
 
-		internal OptRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
-			: base(name, recordType, recordClass, timeToLive)
+		internal override void ParseRecordData(byte[] resultData, int startPosition, int length)
 		{
-			int endPosition = currentPosition + length;
+			int endPosition = startPosition + length;
 
 			Options = new List<EDnsOptionBase>();
-			while (currentPosition < endPosition)
+			while (startPosition < endPosition)
 			{
-				EDnsOptionType type = (EDnsOptionType) DnsMessageBase.ParseUShort(resultData, ref currentPosition);
-				ushort dataLength = DnsMessageBase.ParseUShort(resultData, ref currentPosition);
+				EDnsOptionType type = (EDnsOptionType) DnsMessageBase.ParseUShort(resultData, ref startPosition);
+				ushort dataLength = DnsMessageBase.ParseUShort(resultData, ref startPosition);
 
 				EDnsOptionBase option;
 
 				switch (type)
 				{
 					case EDnsOptionType.LongLivedQuery:
-						option = new LongLivedQueryOption(resultData, currentPosition);
+						option = new LongLivedQueryOption();
 						break;
 
 					case EDnsOptionType.UpdateLease:
-						option = new UpdateLeaseOption(resultData, currentPosition);
+						option = new UpdateLeaseOption();
 						break;
 
 					case EDnsOptionType.NsId:
-						option = new NsIdOption(resultData, currentPosition, dataLength);
+						option = new NsIdOption();
 						break;
 
 					case EDnsOptionType.Owner:
-						option = new OwnerOption(resultData, currentPosition, dataLength);
+						option = new OwnerOption();
 						break;
 
 					case EDnsOptionType.DnssecAlgorithmUnderstood:
-						option = new DnssecAlgorithmUnderstoodOption(resultData, currentPosition, dataLength);
+						option = new DnssecAlgorithmUnderstoodOption();
 						break;
 
 					case EDnsOptionType.DsHashUnderstood:
-						option = new DsHashUnderstoodOption(resultData, currentPosition, dataLength);
+						option = new DsHashUnderstoodOption();
 						break;
 
 					case EDnsOptionType.Nsec3HashUnderstood:
-						option = new Nsec3HashUnderstoodOption(resultData, currentPosition, dataLength);
+						option = new Nsec3HashUnderstoodOption();
 						break;
 
 					case EDnsOptionType.ClientSubnet:
-						option = new ClientSubnetOption(resultData, currentPosition, dataLength);
+						option = new ClientSubnetOption();
 						break;
 
 					case EDnsOptionType.Expire:
-						option = new ExpireOption(resultData, currentPosition, dataLength);
+						option = new ExpireOption();
 						break;
 
 					case EDnsOptionType.Cookie:
-						option = new CookieOption(resultData, currentPosition, dataLength);
-						break;
-
-					case EDnsOptionType.TcpKeepAlive:
-						option = new TcpKeepAliveOption(resultData, currentPosition, dataLength);
-						break;
-
-					case EDnsOptionType.Padding:
-						option = new PaddingOption(resultData, currentPosition, dataLength);
+						option = new CookieOption();
 						break;
 
 					default:
-						option = new UnknownOption(type, resultData, currentPosition, dataLength);
+						option = new UnknownOption(type);
 						break;
 				}
 
+				option.ParseData(resultData, startPosition, dataLength);
 				Options.Add(option);
-				currentPosition += dataLength;
+				startPosition += dataLength;
 			}
 		}
 
-		internal OptRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
-			: base(name, recordType, recordClass, timeToLive)
+		internal override void ParseRecordData(DomainName origin, string[] stringRepresentation)
 		{
 			throw new NotSupportedException();
 		}
@@ -218,7 +207,7 @@ namespace ARSoft.Tools.Net.Dns
 			}
 		}
 
-		protected internal override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
+		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
 		{
 			if ((Options != null) && (Options.Count != 0))
 			{
@@ -230,7 +219,5 @@ namespace ARSoft.Tools.Net.Dns
 				}
 			}
 		}
-
-		protected override bool AvoidRfc8427Cleartext => true;
 	}
 }

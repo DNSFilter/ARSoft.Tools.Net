@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,18 +27,11 @@ namespace ARSoft.Tools.Net.Spf
 	///   <para>Parsed instance of the textual representation of a SPF record</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc4408.html">RFC 4408</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc4408">RFC 4408</see>
 	///   </para>
 	/// </summary>
 	public class SpfRecord : SpfRecordBase
 	{
-		/// <summary>
-		///   Creates a new instance of the SpfRecord
-		/// </summary>
-		/// <param name="terms">Modifiers and mechanisms of a record</param>
-		public SpfRecord(List<SpfTerm> terms)
-			: base(terms) { }
-
 		/// <summary>
 		///   Returns the textual representation of a SPF record
 		/// </summary>
@@ -52,7 +45,7 @@ namespace ARSoft.Tools.Net.Spf
 			{
 				foreach (SpfTerm term in Terms)
 				{
-					SpfModifier? modifier = term as SpfModifier;
+					SpfModifier modifier = term as SpfModifier;
 					if ((modifier == null) || (modifier.Type != SpfModifierType.Unknown))
 					{
 						res.Append(" ");
@@ -80,7 +73,7 @@ namespace ARSoft.Tools.Net.Spf
 		/// <param name="s"> Textual representation to check </param>
 		/// <param name="value"> Parsed spf record in case of successful parsing </param>
 		/// <returns> true in case of successful parsing </returns>
-		public static bool TryParse(string s, out SpfRecord? value)
+		public static bool TryParse(string s, out SpfRecord value)
 		{
 			if (!IsSpfRecord(s))
 			{
@@ -90,10 +83,10 @@ namespace ARSoft.Tools.Net.Spf
 
 			string[] terms = s.Split(new[] { ' ' }, StringSplitOptions.RemoveEmptyEntries);
 
-			List<SpfTerm>? parsedTerms;
+			List<SpfTerm> parsedTerms;
 			if (TryParseTerms(terms, out parsedTerms))
 			{
-				value = new SpfRecord(parsedTerms!);
+				value = new SpfRecord { Terms = parsedTerms };
 				return true;
 			}
 			else

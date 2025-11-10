@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -32,7 +32,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Update Lease</para>
 		///   <para>
 		///     Defined in
-		///     <a href="http://files.dns-sd.org/draft-sekar-dns-llq.txt">draft-sekar-dns-llq</a>.
+		///     <see cref="!:http://files.dns-sd.org/draft-sekar-dns-llq.txt">draft-sekar-dns-llq</see>
 		///   </para>
 		/// </summary>
 		LongLivedQuery = 1,
@@ -41,7 +41,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Update Lease</para>
 		///   <para>
 		///     Defined in
-		///     <a href="http://files.dns-sd.org/draft-sekar-dns-ul.txt">draft-sekar-dns-ul</a>.
+		///     <see cref="!:http://files.dns-sd.org/draft-sekar-dns-ul.txt">draft-sekar-dns-ul</see>
 		///   </para>
 		/// </summary>
 		UpdateLease = 2,
@@ -50,7 +50,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Name server ID</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc5001.html">RFC 5001</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc5001">RFC 5001</see>
 		///   </para>
 		/// </summary>
 		NsId = 3,
@@ -59,7 +59,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Owner</para>
 		///   <para>
 		///     Defined in
-		///     <a href="http://tools.ietf.org/html/draft-cheshire-edns0-owner-option">draft-cheshire-edns0-owner-option</a>.
+		///     <see cref="!:http://tools.ietf.org/html/draft-cheshire-edns0-owner-option">draft-cheshire-edns0-owner-option</see>
 		///   </para>
 		/// </summary>
 		Owner = 4,
@@ -68,7 +68,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>DNSSEC Algorithm Understood</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6975.html">RFC 6975</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6975">RFC 6975</see>
 		///   </para>
 		/// </summary>
 		DnssecAlgorithmUnderstood = 5,
@@ -77,7 +77,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>DS Hash Understood</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6975.html">RFC 6975</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6975">RFC 6975</see>
 		///   </para>
 		/// </summary>
 		DsHashUnderstood = 6,
@@ -86,16 +86,16 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>NSEC3 Hash Understood</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6975.html">RFC 6975</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc6975">RFC 6975</see>
 		///   </para>
 		/// </summary>
 		Nsec3HashUnderstood = 7,
 
 		/// <summary>
-		///   <para>Client Subnet</para>
+		///   <para>ClientSubnet</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7871.html">RFC 7871</a>.
+		///     <see cref="!:http://tools.ietf.org/html/draft-vandergaast-edns-client-subnet">draft-vandergaast-edns-client-subnet</see>
 		///   </para>
 		/// </summary>
 		ClientSubnet = 8,
@@ -104,7 +104,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Expire EDNS Option</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7314.html">RFC 7314</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc7314">RFC 7314</see>
 		///   </para>
 		/// </summary>
 		Expire = 9,
@@ -113,27 +113,63 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Cookie Option</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7873.html">RFC 7873</a>.
+		///     <see cref="!:http://tools.ietf.org/html/draft-ietf-dnsop-cookies">draft-ietf-dnsop-cookies</see>
 		///   </para>
 		/// </summary>
 		Cookie = 10,
 
-		/// <summary>
-		///   <para>edns-tcp-keepalive EDNS0 Option</para>
+        /// <summary>
+		///   <para>TCP keep alive option</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7828.html">RFC 7828</a>.
+		///     <see cref="!:https://tools.ietf.org/html/rfc7828">The edns-tcp-keepalive EDNS0 Option</see>
 		///   </para>
 		/// </summary>
 		TcpKeepAlive = 11,
 
-		/// <summary>
-		///   <para>The EDNS(0) Padding Option</para>
+        /// <summary>
+		///   <para>Padding option</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc7830.html">RFC 7830</a>.
+		///     <see cref="!:https://tools.ietf.org/html/rfc7830">The EDNS(0) Padding Option</see>
 		///   </para>
 		/// </summary>
 		Padding = 12,
-	}
+
+        /// <summary>
+		///   <para>Beginning of range reserved option for local/experimental use</para>
+		///   <para>
+		///     Defined in
+		///     <see cref="!:https://tools.ietf.org/html/rfc6891">Extension Mechanisms for DNS (EDNS(0))</see>
+		///   </para>
+		/// </summary>
+		LocalStart = 65001,
+
+		// <summary>
+		//   <para>URLFiltering edns0 option</para>
+		//   <para>
+		//     Identifier from range of edns0 options reserved for Local Experimentation
+		//     <see cref = "!:https://tools.ietf.org/html/rfc6891" > Extension Mechanisms for DNS (EDNS(0))</see>
+		//   </para>
+		// </summary>
+		URLFiltering = 65333,
+
+		/// <summary>
+		///   <para>URLFiltering edns0 Response Method Identifier parameter</para>
+		///   <para>
+		///     Identifier from range of edns0 options reserved for Local Experimentation
+		///     <see cref="!:https://tools.ietf.org/html/rfc6891">Extension Mechanisms for DNS (EDNS(0))</see>
+		///   </para>
+		/// </summary>
+		MethodID = 65401,
+
+		/// <summary>
+		///   <para>End of range reserved reserved option for local/experimental use</para>
+		///   <para>
+		///     Defined in
+		///     <see cref="!:https://tools.ietf.org/html/rfc6891">Extension Mechanisms for DNS (EDNS(0))</see>
+		///   </para>
+		/// </summary>
+		LocalEnd = 65534,
+    }
 }

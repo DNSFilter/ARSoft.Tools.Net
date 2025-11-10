@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -37,7 +37,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Record class Internet (IN)</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		// ReSharper disable once InconsistentNaming
@@ -62,7 +62,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Record class NONE</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2136.html">RFC 2136</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2136">RFC 2136</see>
 		///   </para>
 		/// </summary>
 		None = 254,
@@ -71,7 +71,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Record class * (ANY)</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		Any = 255
@@ -97,47 +97,6 @@ namespace ARSoft.Tools.Net.Dns
 					return "CLASS" + (int) recordClass;
 			}
 		}
-
-		public static RecordClass ParseShortString(string s, bool allowAny = true)
-		{
-			if (String.IsNullOrEmpty(s))
-				throw new ArgumentOutOfRangeException(nameof(s));
-
-			switch (s.ToUpperInvariant())
-			{
-				case "IN":
-					return RecordClass.INet;
-
-				case "CH":
-					return RecordClass.Chaos;
-
-				case "HS":
-					return RecordClass.Hesiod;
-
-				case "NONE":
-					return RecordClass.None;
-
-				case "*":
-					if (allowAny)
-						return RecordClass.Any;
-					break;
-
-				default:
-					if (s.StartsWith("CLASS", StringComparison.InvariantCultureIgnoreCase))
-					{
-						ushort classValue;
-						if (UInt16.TryParse(s.Substring(5), out classValue))
-						{
-							return (RecordClass) classValue;
-						}
-					}
-
-					break;
-			}
-
-			throw new ArgumentOutOfRangeException(nameof(s));
-		}
-
 
 		public static bool TryParseShortString(string s, out RecordClass recordClass, bool allowAny = true)
 		{
@@ -187,7 +146,6 @@ namespace ARSoft.Tools.Net.Dns
 							return true;
 						}
 					}
-
 					recordClass = RecordClass.Invalid;
 					return false;
 			}

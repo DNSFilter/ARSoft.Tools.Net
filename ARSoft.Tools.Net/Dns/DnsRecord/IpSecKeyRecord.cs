@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -29,7 +29,7 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>IPsec key storage</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc4025.html">RFC 4025</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc4025">RFC 4025</see>
 	///   </para>
 	/// </summary>
 	public class IpSecKeyRecord : DnsRecordBase
@@ -48,7 +48,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>RSA</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc4025.html">RFC 4025</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc4025">RFC 4025</see>
 			///   </para>
 			/// </summary>
 			Rsa = 1,
@@ -57,28 +57,10 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>DSA</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc4025.html">RFC 4025</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc4025">RFC 4025</see>
 			///   </para>
 			/// </summary>
 			Dsa = 2,
-
-			/// <summary>
-			///   <para>ECDSA</para>
-			///   <para>
-			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc8005.html">RFC 8005</a>.
-			///   </para>
-			/// </summary>
-			EcDsa = 3,
-
-			/// <summary>
-			///   <para>EdDSA</para>
-			///   <para>
-			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc9373.html">RFC 9373</a>.
-			///   </para>
-			/// </summary>
-			EdDsa = 4,
 		}
 
 		/// <summary>
@@ -95,7 +77,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Gateway is a IPv4 address</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc4025.html">RFC 4025</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc4025">RFC 4025</see>
 			///   </para>
 			/// </summary>
 			IpV4 = 1,
@@ -104,7 +86,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Gateway is a IPv6 address</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc4025.html">RFC 4025</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc4025">RFC 4025</see>
 			///   </para>
 			/// </summary>
 			IpV6 = 2,
@@ -113,7 +95,7 @@ namespace ARSoft.Tools.Net.Dns
 			///   <para>Gateway is a domain name</para>
 			///   <para>
 			///     Defined in
-			///     <a href="https://www.rfc-editor.org/rfc/rfc4025.html">RFC 4025</a>.
+			///     <see cref="!:http://tools.ietf.org/html/rfc4025">RFC 4025</see>
 			///   </para>
 			/// </summary>
 			Domain = 3,
@@ -122,102 +104,29 @@ namespace ARSoft.Tools.Net.Dns
 		/// <summary>
 		///   Precedence of the record
 		/// </summary>
-		public byte Precedence { get; }
+		public byte Precedence { get; private set; }
 
 		/// <summary>
 		///   Type of gateway
 		/// </summary>
-		public IpSecGatewayType GatewayType { get; }
+		public IpSecGatewayType GatewayType { get; private set; }
 
 		/// <summary>
 		///   Algorithm of the key
 		/// </summary>
-		public IpSecAlgorithm Algorithm { get; }
+		public IpSecAlgorithm Algorithm { get; private set; }
 
 		/// <summary>
 		///   Address of the gateway
 		/// </summary>
-		public string Gateway { get; }
+		public string Gateway { get; private set; }
 
 		/// <summary>
 		///   Binary data of the public key
 		/// </summary>
-		public byte[] PublicKey { get; }
+		public byte[] PublicKey { get; private set; }
 
-		internal IpSecKeyRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			int startPosition = currentPosition;
-
-			Precedence = resultData[currentPosition++];
-			GatewayType = (IpSecGatewayType) resultData[currentPosition++];
-			Algorithm = (IpSecAlgorithm) resultData[currentPosition++];
-			switch (GatewayType)
-			{
-				case IpSecGatewayType.IpV4:
-					Gateway = new IPAddress(DnsMessageBase.ParseByteData(resultData, ref currentPosition, 4)).ToString();
-					break;
-				case IpSecGatewayType.IpV6:
-					Gateway = new IPAddress(DnsMessageBase.ParseByteData(resultData, ref currentPosition, 16)).ToString();
-					break;
-				case IpSecGatewayType.Domain:
-					Gateway = DnsMessageBase.ParseDomainName(resultData, ref currentPosition).ToString(true);
-					break;
-				default:
-					Gateway = String.Empty;
-					break;
-			}
-
-			PublicKey = DnsMessageBase.ParseByteData(resultData, ref currentPosition, length + startPosition - currentPosition);
-		}
-
-		internal IpSecKeyRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			if (stringRepresentation.Length < 5)
-				throw new FormatException();
-
-			Precedence = Byte.Parse(stringRepresentation[0]);
-			GatewayType = (IpSecGatewayType) Byte.Parse(stringRepresentation[1]);
-			Algorithm = (IpSecAlgorithm) Byte.Parse(stringRepresentation[2]);
-			switch (GatewayType)
-			{
-				case IpSecGatewayType.IpV4:
-				{
-					if (IPAddress.TryParse(stringRepresentation[3], out var address) && address.AddressFamily == AddressFamily.InterNetwork)
-					{
-						Gateway = address.ToString();
-					}
-					else
-					{
-						throw new FormatException();
-					}
-
-					break;
-				}
-				case IpSecGatewayType.IpV6:
-				{
-					if (IPAddress.TryParse(stringRepresentation[3], out var address) && address.AddressFamily == AddressFamily.InterNetworkV6)
-					{
-						Gateway = address.ToString();
-					}
-					else
-					{
-						throw new FormatException();
-					}
-
-					break;
-				}
-				case IpSecGatewayType.Domain:
-					Gateway = ParseDomainName(origin, stringRepresentation[3]).ToString(true);
-					break;
-				default:
-					Gateway = DomainName.Root.ToString(true);
-					break;
-			}
-
-			PublicKey = String.Join(String.Empty, stringRepresentation.Skip(4)).FromBase64String();
-		}
+		internal IpSecKeyRecord() {}
 
 		/// <summary>
 		///   Creates a new instance of the IpSecKeyRecord class
@@ -234,8 +143,8 @@ namespace ARSoft.Tools.Net.Dns
 			Precedence = precedence;
 			GatewayType = IpSecGatewayType.Domain;
 			Algorithm = algorithm;
-			Gateway = gateway.ToString(true);
-			PublicKey = publicKey;
+			Gateway = (gateway ?? DomainName.Root).ToString();
+			PublicKey = publicKey ?? new byte[] { };
 		}
 
 		/// <summary>
@@ -254,7 +163,44 @@ namespace ARSoft.Tools.Net.Dns
 			GatewayType = (gateway.AddressFamily == AddressFamily.InterNetwork) ? IpSecGatewayType.IpV4 : IpSecGatewayType.IpV6;
 			Algorithm = algorithm;
 			Gateway = gateway.ToString();
-			PublicKey = publicKey;
+			PublicKey = publicKey ?? new byte[] { };
+		}
+
+		internal override void ParseRecordData(byte[] resultData, int currentPosition, int length)
+		{
+			int startPosition = currentPosition;
+
+			Precedence = resultData[currentPosition++];
+			GatewayType = (IpSecGatewayType) resultData[currentPosition++];
+			Algorithm = (IpSecAlgorithm) resultData[currentPosition++];
+			switch (GatewayType)
+			{
+				case IpSecGatewayType.None:
+					Gateway = String.Empty;
+					break;
+				case IpSecGatewayType.IpV4:
+					Gateway = new IPAddress(DnsMessageBase.ParseByteData(resultData, ref currentPosition, 4)).ToString();
+					break;
+				case IpSecGatewayType.IpV6:
+					Gateway = new IPAddress(DnsMessageBase.ParseByteData(resultData, ref currentPosition, 16)).ToString();
+					break;
+				case IpSecGatewayType.Domain:
+					Gateway = DnsMessageBase.ParseDomainName(resultData, ref currentPosition).ToString();
+					break;
+			}
+			PublicKey = DnsMessageBase.ParseByteData(resultData, ref currentPosition, length + startPosition - currentPosition);
+		}
+
+		internal override void ParseRecordData(DomainName origin, string[] stringRepresentation)
+		{
+			if (stringRepresentation.Length < 5)
+				throw new FormatException();
+
+			Precedence = Byte.Parse(stringRepresentation[0]);
+			GatewayType = (IpSecGatewayType) Byte.Parse(stringRepresentation[1]);
+			Algorithm = (IpSecAlgorithm) Byte.Parse(stringRepresentation[2]);
+			Gateway = stringRepresentation[3];
+			PublicKey = String.Join(String.Empty, stringRepresentation.Skip(4)).FromBase64String();
 		}
 
 		internal override string RecordDataToString()
@@ -262,8 +208,24 @@ namespace ARSoft.Tools.Net.Dns
 			return Precedence
 			       + " " + (byte) GatewayType
 			       + " " + (byte) Algorithm
-			       + " " + Gateway
+			       + " " + GatewayToString()
 			       + " " + PublicKey.ToBase64String();
+		}
+
+		private string GatewayToString()
+		{
+			switch (GatewayType)
+			{
+				case IpSecGatewayType.Domain:
+					return Gateway.ToMasterfileLabelRepresentation() + ".";
+
+				case IpSecGatewayType.IpV4:
+				case IpSecGatewayType.IpV6:
+					return Gateway;
+
+				default:
+					return ".";
+			}
 		}
 
 		protected internal override int MaximumRecordDataLength
@@ -283,13 +245,12 @@ namespace ARSoft.Tools.Net.Dns
 						res += 2 + Gateway.Length;
 						break;
 				}
-
 				res += PublicKey.Length;
 				return res;
 			}
 		}
 
-		protected internal override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
+		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
 		{
 			messageData[currentPosition++] = Precedence;
 			messageData[currentPosition++] = (byte) GatewayType;
@@ -302,10 +263,9 @@ namespace ARSoft.Tools.Net.Dns
 					DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, addressBuffer);
 					break;
 				case IpSecGatewayType.Domain:
-					DnsMessageBase.EncodeDomainName(messageData, ref currentPosition, ParseDomainName(DomainName.Root, Gateway), null, false);
+					DnsMessageBase.EncodeDomainName(messageData, offset, ref currentPosition, ParseDomainName(DomainName.Root, Gateway), null, false);
 					break;
 			}
-
 			DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, PublicKey);
 		}
 	}

@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,16 +27,12 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>Text strings</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 	///   </para>
 	/// </summary>
 	public class TxtRecord : TextRecordBase
 	{
-		internal TxtRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
-			: base(name, recordType, recordClass, timeToLive, resultData, currentPosition, length) { }
-
-		internal TxtRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
-			: base(name, recordType, recordClass, timeToLive, origin, stringRepresentation) { }
+		internal TxtRecord() {}
 
 		/// <summary>
 		///   Creates a new instance of the TxtRecord class
@@ -45,7 +41,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="timeToLive"> Seconds the record should be cached at most </param>
 		/// <param name="textData"> Text data </param>
 		public TxtRecord(DomainName name, int timeToLive, string textData)
-			: base(name, RecordType.Txt, timeToLive, textData) { }
+			: base(name, RecordType.Txt, timeToLive, textData) {}
 
 		/// <summary>
 		///   Creates a new instance of the TxtRecord class
@@ -54,6 +50,6 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="timeToLive"> Seconds the record should be cached at most </param>
 		/// <param name="textParts"> All parts of the text data </param>
 		public TxtRecord(DomainName name, int timeToLive, IEnumerable<string> textParts)
-			: base(name, RecordType.Txt, timeToLive, textParts) { }
+			: base(name, RecordType.Txt, timeToLive, textParts) {}
 	}
 }

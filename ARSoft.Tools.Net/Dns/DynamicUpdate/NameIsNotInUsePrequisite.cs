@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -28,15 +28,19 @@ namespace ARSoft.Tools.Net.Dns.DynamicUpdate
 	/// </summary>
 	public class NameIsNotInUsePrequisite : PrequisiteBase
 	{
+		internal NameIsNotInUsePrequisite() {}
+
 		/// <summary>
 		///   Creates a new instance of the NameIsNotInUsePrequisite class
 		/// </summary>
 		/// <param name="name"> Name that should be checked </param>
 		public NameIsNotInUsePrequisite(DomainName name)
-			: base(name) { }
+			: base(name, RecordType.Any, RecordClass.None, 0) {}
 
-		protected override RecordType RecordTypeInternal => RecordType.Any;
+		internal override void ParseRecordData(byte[] resultData, int startPosition, int length) {}
 
-		protected override RecordClass RecordClassInternal => RecordClass.None;
+		protected internal override int MaximumRecordDataLength => 0;
+
+		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical) {}
 	}
 }

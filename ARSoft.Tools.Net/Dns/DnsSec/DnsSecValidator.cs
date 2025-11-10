@@ -1,5 +1,5 @@
 #region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -58,9 +58,9 @@ namespace ARSoft.Tools.Net.Dns
 
 		private async Task<bool> ValidateOptOut(DomainName name, RecordClass recordClass, TState state, CancellationToken token)
 		{
-			while (!name.IsRoot)
+			while (name != DomainName.Root)
 			{
-				DnsMessage? msg = await _resolver.ResolveMessageAsync(name, RecordType.Ds, recordClass, state, token);
+				DnsMessage msg = await _resolver.ResolveMessageAsync(name, RecordType.Ds, recordClass, state, token);
 
 				if ((msg == null) || ((msg.ReturnCode != ReturnCode.NoError) && (msg.ReturnCode != ReturnCode.NxDomain)))
 				{
@@ -83,17 +83,16 @@ namespace ARSoft.Tools.Net.Dns
 
 				name = name.GetParentName();
 			}
-
 			return false;
 		}
 
-		private async Task<DnsSecValidationResult> ValidateNonExistenceAsync(DomainName name, RecordType recordType, RecordClass recordClass, List<RrSigRecord> rrSigRecords, DomainName stop, DomainName zoneApex, DnsMessage msg, TState state, CancellationToken token)
+		private async Task<DnsSecValidationResult> ValidateNonExistenceAsync(DomainName name, RecordType recordType, RecordClass recordClass, List<RrSigRecord> rrSigRecords, DomainName stop, DomainName zoneApex, DnsMessageBase msg, TState state, CancellationToken token)
 		{
 			var nsecRes = await ValidateNSecAsync(name, recordType, recordClass, rrSigRecords, stop, zoneApex, msg, state, token);
 			if (nsecRes == DnsSecValidationResult.Signed)
 				return nsecRes;
 
-			var nsec3Res = await ValidateNSec3Async(name, recordType, recordClass, rrSigRecords, stop.Equals(DomainName.Asterisk + zoneApex), zoneApex, msg, state, token);
+			var nsec3Res = await ValidateNSec3Async(name, recordType, recordClass, rrSigRecords, stop == DomainName.Asterisk + zoneApex, zoneApex, msg, state, token);
 			if (nsec3Res == DnsSecValidationResult.Signed)
 				return nsec3Res;
 
@@ -106,7 +105,7 @@ namespace ARSoft.Tools.Net.Dns
 			return DnsSecValidationResult.Indeterminate;
 		}
 
-		private async Task<DnsSecValidationResult> ValidateNSecAsync(DomainName name, RecordType recordType, RecordClass recordClass, List<RrSigRecord> rrSigRecords, DomainName stop, DomainName zoneApex, DnsMessage msg, TState state, CancellationToken token)
+		private async Task<DnsSecValidationResult> ValidateNSecAsync(DomainName name, RecordType recordType, RecordClass recordClass, List<RrSigRecord> rrSigRecords, DomainName stop, DomainName zoneApex, DnsMessageBase msg, TState state, CancellationToken token)
 		{
 			List<NSecRecord> nsecRecords = msg.AuthorityRecords.OfType<NSecRecord>().ToList();
 
@@ -130,7 +129,7 @@ namespace ARSoft.Tools.Net.Dns
 					return DnsSecValidationResult.Signed;
 				}
 
-				NSecRecord? nsecRecord = nsecRecords.FirstOrDefault(x => x.Name.Equals(current));
+				NSecRecord nsecRecord = nsecRecords.FirstOrDefault(x => x.Name.Equals(current));
 				if (nsecRecord != null)
 				{
 					return nsecRecord.Types.Contains(recordType) ? DnsSecValidationResult.Bogus : DnsSecValidationResult.Signed;
@@ -142,13 +141,13 @@ namespace ARSoft.Tools.Net.Dns
 						return DnsSecValidationResult.Bogus;
 				}
 
-				current = current.Labels[0] == "*" ? current.GetParentName() : DomainName.Asterisk + current.GetParentName();
+				current = DomainName.Asterisk + current.GetParentName(current.Labels[0] == "*" ? 2 : 1);
 			}
 		}
 
-		private async Task<DnsSecValidationResult> ValidateNSec3Async(DomainName name, RecordType recordType, RecordClass recordClass, List<RrSigRecord> rrSigRecords, bool checkWildcard, DomainName zoneApex, DnsMessage msg, TState state, CancellationToken token)
+		private async Task<DnsSecValidationResult> ValidateNSec3Async(DomainName name, RecordType recordType, RecordClass recordClass, List<RrSigRecord> rrSigRecords, bool checkWildcard, DomainName zoneApex, DnsMessageBase msg, TState state, CancellationToken token)
 		{
-			List<NSec3Record> nsecRecords = msg.AuthorityRecords.OfType<NSec3Record>().Where(r => r.Flags == NSec3Flags.None || r.Flags == NSec3Flags.OptOut).ToList();
+			List<NSec3Record> nsecRecords = msg.AuthorityRecords.OfType<NSec3Record>().ToList();
 
 			if (nsecRecords.Count == 0)
 				return DnsSecValidationResult.Indeterminate;
@@ -163,9 +162,9 @@ namespace ARSoft.Tools.Net.Dns
 
 			var nsec3Parameter = nsecRecords.Where(x => x.Name.GetParentName().Equals(zoneApex)).Where(x => x.HashAlgorithm.IsSupported()).Select(x => new { x.HashAlgorithm, x.Iterations, x.Salt }).OrderBy(x => x.HashAlgorithm.GetPriority()).First();
 
-			DomainName hashedName = name.GetNSec3HashName(nsec3Parameter.HashAlgorithm, nsec3Parameter.Iterations, nsec3Parameter.Salt, zoneApex);
+			DomainName hashedName = name.GetNsec3HashName(nsec3Parameter.HashAlgorithm, nsec3Parameter.Iterations, nsec3Parameter.Salt, zoneApex);
 
-			if (recordType == RecordType.Ds && nsecRecords.Any(x => x.IsCovering(hashedName) && x.Flags.HasFlag(NSec3Flags.OptOut)))
+			if (recordType == RecordType.Ds && nsecRecords.Any(x => (x.Flags == 1) && (x.IsCovering(hashedName))))
 				return DnsSecValidationResult.Unsigned;
 
 			var directMatch = nsecRecords.FirstOrDefault(x => x.Name.Equals(hashedName));
@@ -180,15 +179,15 @@ namespace ARSoft.Tools.Net.Dns
 
 			while (true)
 			{
-				if (nsecRecords.Any(x => x.Name.Equals(hashedName, true)))
+				if (nsecRecords.Any(x => x.Name == hashedName))
 					break;
 
-				if (current.Equals(zoneApex))
+				if (current == zoneApex)
 					return DnsSecValidationResult.Bogus; // closest encloser could not be found, but at least the zone apex must be found as
 
 				current = current.GetParentName();
 				previousHashedName = hashedName;
-				hashedName = current.GetNSec3HashName(nsec3Parameter.HashAlgorithm, nsec3Parameter.Iterations, nsec3Parameter.Salt, zoneApex);
+				hashedName = current.GetNsec3HashName(nsec3Parameter.HashAlgorithm, nsec3Parameter.Iterations, nsec3Parameter.Salt, zoneApex);
 			}
 
 			if (!nsecRecords.Any(x => x.IsCovering(previousHashedName)))
@@ -196,7 +195,7 @@ namespace ARSoft.Tools.Net.Dns
 
 			if (checkWildcard)
 			{
-				DomainName wildcardHashName = (DomainName.Asterisk + current).GetNSec3HashName(nsec3Parameter.HashAlgorithm, nsec3Parameter.Iterations, nsec3Parameter.Salt, zoneApex);
+				DomainName wildcardHashName = (DomainName.Asterisk + current).GetNsec3HashName(nsec3Parameter.HashAlgorithm, nsec3Parameter.Iterations, nsec3Parameter.Salt, zoneApex);
 
 				var wildcardDirectMatch = nsecRecords.FirstOrDefault(x => x.Name.Equals(wildcardHashName));
 				if ((wildcardDirectMatch != null) && (!wildcardDirectMatch.Types.Contains(recordType)))
@@ -211,14 +210,14 @@ namespace ARSoft.Tools.Net.Dns
 			}
 		}
 
-		private async Task<DnsSecValidationResult> ValidateRrSigAsync<TRecord>(DomainName name, RecordType recordType, RecordClass recordClass, List<TRecord> resultRecords, List<RrSigRecord> rrSigRecords, DomainName zoneApex, DnsMessage msg, TState state, CancellationToken token)
+		private async Task<DnsSecValidationResult> ValidateRrSigAsync<TRecord>(DomainName name, RecordType recordType, RecordClass recordClass, List<TRecord> resultRecords, List<RrSigRecord> rrSigRecords, DomainName zoneApex, DnsMessageBase msg, TState state, CancellationToken token)
 			where TRecord : DnsRecordBase
 		{
 			DnsSecValidationResult res = DnsSecValidationResult.Bogus;
 
 			foreach (var record in rrSigRecords.Where(x => x.Name.Equals(name) && (x.TypeCovered == recordType)))
 			{
-				res = await ValidateRrSigAsync(record, resultRecords, recordClass, state, token);
+				res = await VerifyAsync(record, resultRecords, recordClass, state, token);
 				if (res == DnsSecValidationResult.Signed)
 				{
 					if ((record.Labels == name.LabelCount)
@@ -233,12 +232,12 @@ namespace ARSoft.Tools.Net.Dns
 			return res;
 		}
 
-		private async Task<DnsSecValidationResult> ValidateRrSigAsync<TRecord>(RrSigRecord rrSigRecord, List<TRecord> coveredRecords, RecordClass recordClass, TState state, CancellationToken token)
+		private async Task<DnsSecValidationResult> VerifyAsync<TRecord>(RrSigRecord rrSigRecord, List<TRecord> coveredRecords, RecordClass recordClass, TState state, CancellationToken token)
 			where TRecord : DnsRecordBase
 		{
 			if (rrSigRecord.TypeCovered == RecordType.DnsKey)
 			{
-				IReadOnlyList<DsRecord> dsRecords;
+				List<DsRecord> dsRecords;
 
 				if (rrSigRecord.SignersName.Equals(DomainName.Root))
 				{
@@ -257,12 +256,6 @@ namespace ARSoft.Tools.Net.Dns
 					dsRecords = dsRecordResults.Records;
 				}
 
-				if (!dsRecords.Any())
-					return DnsSecValidationResult.Unsigned;
-
-				if (dsRecords.Any() && !dsRecords.Any(r => r.Algorithm.IsSupported()))
-					return DnsSecValidationResult.Indeterminate;
-
 				return dsRecords.Any(dsRecord => rrSigRecord.Verify(coveredRecords, coveredRecords.Cast<DnsKeyRecord>().Where(dsRecord.IsCovering).ToList())) ? DnsSecValidationResult.Signed : DnsSecValidationResult.Bogus;
 			}
 			else
@@ -272,13 +265,10 @@ namespace ARSoft.Tools.Net.Dns
 				if ((dnsKeyRecordResults.ValidationResult == DnsSecValidationResult.Bogus) || (dnsKeyRecordResults.ValidationResult == DnsSecValidationResult.Indeterminate))
 					throw new DnsSecValidationException("DNSKEY records could not be retrieved");
 
-				if (!rrSigRecord.Verify(coveredRecords, dnsKeyRecordResults.Records))
-					return DnsSecValidationResult.Bogus;
-
 				if (dnsKeyRecordResults.ValidationResult == DnsSecValidationResult.Unsigned)
-					return DnsSecValidationResult.Indeterminate;
+					return DnsSecValidationResult.Unsigned;
 
-				return DnsSecValidationResult.Signed;
+				return rrSigRecord.Verify(coveredRecords, dnsKeyRecordResults.Records) ? DnsSecValidationResult.Signed : DnsSecValidationResult.Bogus;
 			}
 		}
 	}

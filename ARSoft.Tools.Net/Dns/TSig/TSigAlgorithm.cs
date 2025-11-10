@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -38,7 +38,7 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>MD5</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc2845.html">RFC 2845</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc2845">RFC 2845</see>
 		///   </para>
 		/// </summary>
 		Md5,
@@ -47,72 +47,36 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>SHA-1</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4635.html">RFC 4635</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4635">RFC 4635</see>
 		///   </para>
 		/// </summary>
-		Sha1,
-
-		/// <summary>
-		///   <para>SHA-1</para>
-		///   <para>
-		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc8945.html">RFC 8945</a>.
-		///   </para>
-		/// </summary>
-		Sha224,
+		Sha1, // RFC4635
 
 		/// <summary>
 		///   <para>SHA-256</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4635.html">RFC 4635</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4635">RFC 4635</see>
 		///   </para>
 		/// </summary>
 		Sha256,
 
 		/// <summary>
-		///   <para>SHA-256 with truncation</para>
-		///   <para>
-		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc8945.html">RFC 8945</a>.
-		///   </para>
-		/// </summary>
-		Sha256_128,
-
-		/// <summary>
 		///   <para>SHA-384</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4635.html">RFC 4635</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4635">RFC 4635</see>
 		///   </para>
 		/// </summary>
 		Sha384,
 
 		/// <summary>
-		///   <para>SHA-384 with truncation</para>
-		///   <para>
-		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc8945.html">RFC 8945</a>.
-		///   </para>
-		/// </summary>
-		Sha384_192,
-
-		/// <summary>
 		///   <para>SHA-512</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc4635.html">RFC 4635</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc4635">RFC 4635</see>
 		///   </para>
 		/// </summary>
 		Sha512,
-
-		/// <summary>
-		///   <para>SHA-512 with truncation</para>
-		///   <para>
-		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc8945.html">RFC 8945</a>.
-		///   </para>
-		/// </summary>
-		Sha512_256,
 	}
 }

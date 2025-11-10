@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -34,20 +34,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		public IPAddress Address { get; private set; }
 
-		protected AddressRecordBase(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			Address = new IPAddress(DnsMessageBase.ParseByteData(resultData, ref currentPosition, MaximumRecordDataLength));
-		}
-
-		protected AddressRecordBase(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			if (stringRepresentation.Length != 1)
-				throw new FormatException();
-
-			Address = IPAddress.Parse(stringRepresentation[0]);
-		}
+		protected AddressRecordBase() {}
 
 		protected AddressRecordBase(DomainName name, RecordType recordType, int timeToLive, IPAddress address)
 			: base(name, recordType, RecordClass.INet, timeToLive)
@@ -55,12 +42,25 @@ namespace ARSoft.Tools.Net.Dns
 			Address = address;
 		}
 
+		internal override void ParseRecordData(byte[] resultData, int startPosition, int length)
+		{
+			Address = new IPAddress(DnsMessageBase.ParseByteData(resultData, ref startPosition, MaximumRecordDataLength));
+		}
+
+		internal override void ParseRecordData(DomainName origin, string[] stringRepresentation)
+		{
+			if (stringRepresentation.Length != 1)
+				throw new FormatException();
+
+			Address = IPAddress.Parse(stringRepresentation[0]);
+		}
+
 		internal override string RecordDataToString()
 		{
 			return Address.ToString();
 		}
 
-		protected internal override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
+		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
 		{
 			DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, Address.GetAddressBytes());
 		}

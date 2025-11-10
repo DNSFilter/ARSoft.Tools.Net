@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,7 +27,7 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>Long lived query option</para>
 	///   <para>
 	///     Defined in
-	///     <a href="http://files.dns-sd.org/draft-sekar-dns-llq.txt">draft-sekar-dns-llq</a>
+	///     <see cref="!:http://files.dns-sd.org/draft-sekar-dns-llq.txt">draft-sekar-dns-llq</see>
 	///   </para>
 	/// </summary>
 	public class LongLivedQueryOption : EDnsOptionBase
@@ -120,15 +120,8 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		public TimeSpan LeaseTime { get; private set; }
 
-		internal LongLivedQueryOption(IList<byte> resultData, int startPosition)
-			: base(EDnsOptionType.LongLivedQuery)
-		{
-			Version = DnsMessageBase.ParseUShort(resultData, ref startPosition);
-			OperationCode = (LlqOperationCode) DnsMessageBase.ParseUShort(resultData, ref startPosition);
-			ErrorCode = (LlqErrorCode) DnsMessageBase.ParseUShort(resultData, ref startPosition);
-			Id = DnsMessageBase.ParseULong(resultData, ref startPosition);
-			LeaseTime = TimeSpan.FromSeconds(DnsMessageBase.ParseUInt(resultData, ref startPosition));
-		}
+		internal LongLivedQueryOption()
+			: base(EDnsOptionType.LongLivedQuery) {}
 
 		/// <summary>
 		///   Creates a new instance of the LongLivedQueryOption class
@@ -138,7 +131,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="id"> Identifier for an LLQ </param>
 		/// <param name="leaseTime"> Requested or granted life of LLQ </param>
 		public LongLivedQueryOption(LlqOperationCode operationCode, LlqErrorCode errorCode, ulong id, TimeSpan leaseTime)
-			: this(0, operationCode, errorCode, id, leaseTime) { }
+			: this(0, operationCode, errorCode, id, leaseTime) {}
 
 		/// <summary>
 		///   Creates a new instance of the LongLivedQueryOption class
@@ -149,7 +142,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="id"> Identifier for an LLQ </param>
 		/// <param name="leaseTime"> Requested or granted life of LLQ </param>
 		public LongLivedQueryOption(ushort version, LlqOperationCode operationCode, LlqErrorCode errorCode, ulong id, TimeSpan leaseTime)
-			: base(EDnsOptionType.LongLivedQuery)
+			: this()
 		{
 			Version = version;
 			OperationCode = operationCode;
@@ -158,9 +151,18 @@ namespace ARSoft.Tools.Net.Dns
 			LeaseTime = leaseTime;
 		}
 
+		internal override void ParseData(byte[] resultData, int startPosition, int length)
+		{
+			Version = DnsMessageBase.ParseUShort(resultData, ref startPosition);
+			OperationCode = (LlqOperationCode) DnsMessageBase.ParseUShort(resultData, ref startPosition);
+			ErrorCode = (LlqErrorCode) DnsMessageBase.ParseUShort(resultData, ref startPosition);
+			Id = DnsMessageBase.ParseULong(resultData, ref startPosition);
+			LeaseTime = TimeSpan.FromSeconds(DnsMessageBase.ParseUInt(resultData, ref startPosition));
+		}
+
 		internal override ushort DataLength => 18;
 
-		internal override void EncodeData(IList<byte> messageData, ref int currentPosition)
+		internal override void EncodeData(byte[] messageData, ref int currentPosition)
 		{
 			DnsMessageBase.EncodeUShort(messageData, ref currentPosition, Version);
 			DnsMessageBase.EncodeUShort(messageData, ref currentPosition, (ushort) OperationCode);

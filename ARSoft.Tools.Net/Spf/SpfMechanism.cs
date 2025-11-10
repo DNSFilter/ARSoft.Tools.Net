@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -31,44 +31,27 @@ namespace ARSoft.Tools.Net.Spf
 		/// <summary>
 		///   Qualifier of the mechanism
 		/// </summary>
-		public SpfQualifier Qualifier { get; }
+		public SpfQualifier Qualifier { get; set; }
 
 		/// <summary>
 		///   Type of the mechanism
 		/// </summary>
-		public SpfMechanismType Type { get; }
+		public SpfMechanismType Type { get; set; }
 
 		/// <summary>
 		///   Domain part of the mechanism
 		/// </summary>
-		public string? Domain { get; }
+		public string Domain { get; set; }
 
 		/// <summary>
 		///   IPv4 prefix of the mechanism
 		/// </summary>
-		public int? Prefix { get; }
+		public int? Prefix { get; set; }
 
 		/// <summary>
 		///   IPv6 prefix of the mechanism
 		/// </summary>
-		public int? Prefix6 { get; }
-
-		/// <summary>
-		///   Creates a new instance of the SpfMechanism
-		/// </summary>
-		/// <param name="qualifier">Qualifier of the mechanism</param>
-		/// <param name="type">Type of the mechanism</param>
-		/// <param name="domain">Domain part of the mechanism</param>
-		/// <param name="prefix">IPv4 prefix of the mechanism</param>
-		/// <param name="prefix6">IPv6 prefix of the mechanism</param>
-		public SpfMechanism(SpfQualifier qualifier, SpfMechanismType type, string? domain = null, int? prefix = null, int? prefix6 = null)
-		{
-			Qualifier = qualifier;
-			Type = type;
-			Domain = domain;
-			Prefix = prefix;
-			Prefix6 = prefix6;
-		}
+		public int? Prefix6 { get; set; }
 
 		/// <summary>
 		///   Returns the textual representation of a mechanism term
@@ -76,11 +59,7 @@ namespace ARSoft.Tools.Net.Spf
 		/// <returns> Textual representation </returns>
 		public override string ToString()
 		{
-			var res = new StringBuilder
-			{
-				Capacity = 0,
-				Length = 0
-			};
+			StringBuilder res = new StringBuilder();
 
 			switch (Qualifier)
 			{
@@ -95,7 +74,7 @@ namespace ARSoft.Tools.Net.Spf
 					break;
 			}
 
-			res.Append(EnumHelper<SpfMechanismType>.ToString(Type).ToLowerInvariant());
+			res.Append(EnumHelper<SpfMechanismType>.ToString(Type).ToLower());
 
 			if (!String.IsNullOrEmpty(Domain))
 			{

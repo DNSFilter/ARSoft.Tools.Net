@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -29,47 +29,39 @@ namespace ARSoft.Tools.Net
 {
 	internal static class TcpClientExtensions
 	{
-		public static bool TryConnect(this TcpClient tcpClient, IPAddress address, int port, int timeout)
+		public static bool TryConnect(this TcpClient tcpClient, IPEndPoint endPoint, int timeout)
 		{
+			IAsyncResult ar = tcpClient.BeginConnect(endPoint.Address, endPoint.Port, null, null);
+			var wh = ar.AsyncWaitHandle;
 			try
 			{
-				var ar = tcpClient.BeginConnect(address, port, null, null);
-
 				if (!ar.AsyncWaitHandle.WaitOne(TimeSpan.FromMilliseconds(timeout), false))
 				{
 					tcpClient.Close();
+					return false;
 				}
 
 				tcpClient.EndConnect(ar);
+				return true;
 			}
-			catch
+			finally
 			{
-				return false;
+				wh.Close();
 			}
-
-			return true;
 		}
 
 		public static async Task<bool> TryConnectAsync(this TcpClient tcpClient, IPAddress address, int port, int timeout, CancellationToken token)
 		{
-			try
-			{
-				await tcpClient.ConnectAsync(address, port, token).AsTask().WaitAsync(TimeSpan.FromMilliseconds(timeout), token);
-				return true;
-			}
-			catch
-			{
-				try
-				{
-					tcpClient.Close();
-				}
-				catch
-				{
-					// ignored
-				}
+			var connectTask = tcpClient.ConnectAsync(address, port);
+			var timeoutTask = Task.Delay(timeout, token);
 
-				return false;
-			}
+			await Task.WhenAny(connectTask, timeoutTask);
+
+			if (connectTask.IsCompleted)
+				return true;
+
+			tcpClient.Close();
+			return false;
 		}
 
 		public static bool IsConnected(this TcpClient client)

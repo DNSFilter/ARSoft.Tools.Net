@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -20,15 +20,13 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
-using System.Text.Json.Serialization;
 
 namespace ARSoft.Tools.Net.Dns
 {
 	/// <summary>
 	///   Message returned as result to a dns query
 	/// </summary>
-	[JsonConverter(typeof(Rfc8427JsonConverter<MulticastDnsMessage>))]
-	public class MulticastDnsMessage : DnsRecordMessageBase
+	public class MulticastDnsMessage : DnsMessageBase
 	{
 		/// <summary>
 		///   Parses a the contents of a byte array as MulticastDnsMessage
@@ -45,41 +43,175 @@ namespace ARSoft.Tools.Net.Dns
 		///   <para>Gets or sets the autoritive answer (AA) flag</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6762.html">RFC 6762</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		public bool IsAuthoritiveAnswer
 		{
-			get => AAFlagInternal;
-			set => AAFlagInternal = value;
+			get { return (Flags & 0x0400) != 0; }
+			set
+			{
+				if (value)
+				{
+					Flags |= 0x0400;
+				}
+				else
+				{
+					Flags &= 0xfbff;
+				}
+			}
 		}
 
 		/// <summary>
 		///   <para>Gets or sets the truncated response (TC) flag</para>
 		///   <para>
 		///     Defined in
-		///     <a href="https://www.rfc-editor.org/rfc/rfc6762.html">RFC 6762</a>.
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 		///   </para>
 		/// </summary>
 		public bool IsTruncated
 		{
-			get => TCFlagInternal;
-			set => TCFlagInternal = value;
+			get { return (Flags & 0x0200) != 0; }
+			set
+			{
+				if (value)
+				{
+					Flags |= 0x0200;
+				}
+				else
+				{
+					Flags &= 0xfdff;
+				}
+			}
+		}
+
+		/// <summary>
+		///   <para>Gets or sets the recursion desired (RD) flag</para>
+		///   <para>
+		///     Defined in
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
+		///   </para>
+		/// </summary>
+		public bool IsRecursionDesired
+		{
+			get { return (Flags & 0x0100) != 0; }
+			set
+			{
+				if (value)
+				{
+					Flags |= 0x0100;
+				}
+				else
+				{
+					Flags &= 0xfeff;
+				}
+			}
+		}
+
+		/// <summary>
+		///   <para>Gets or sets the recursion allowed (RA) flag</para>
+		///   <para>
+		///     Defined in
+		///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
+		///   </para>
+		/// </summary>
+		public bool IsRecursionAllowed
+		{
+			get { return (Flags & 0x0080) != 0; }
+			set
+			{
+				if (value)
+				{
+					Flags |= 0x0080;
+				}
+				else
+				{
+					Flags &= 0xff7f;
+				}
+			}
+		}
+
+		/// <summary>
+		///   <para>Gets or sets the authentic data (AD) flag</para>
+		///   <para>
+		///     Defined in
+		///     <see cref="!:http://tools.ietf.org/html/rfc4035">RFC 4035</see>
+		///   </para>
+		/// </summary>
+		public bool IsAuthenticData
+		{
+			get { return (Flags & 0x0020) != 0; }
+			set
+			{
+				if (value)
+				{
+					Flags |= 0x0020;
+				}
+				else
+				{
+					Flags &= 0xffdf;
+				}
+			}
+		}
+
+		/// <summary>
+		///   <para>Gets or sets the checking disabled (CD) flag</para>
+		///   <para>
+		///     Defined in
+		///     <see cref="!:http://tools.ietf.org/html/rfc4035">RFC 4035</see>
+		///   </para>
+		/// </summary>
+		public bool IsCheckingDisabled
+		{
+			get { return (Flags & 0x0010) != 0; }
+			set
+			{
+				if (value)
+				{
+					Flags |= 0x0010;
+				}
+				else
+				{
+					Flags &= 0xffef;
+				}
+			}
 		}
 		#endregion
 
-		internal override bool IsReliableSendingRequested => false;
-
-		internal override bool IsReliableResendingRequested => IsTruncated;
-
-		internal override bool IsNextMessageWaiting(bool isSubsequentResponseMessage)
+		/// <summary>
+		///   Gets or sets the entries in the question section
+		/// </summary>
+		public new List<DnsQuestion> Questions
 		{
-			return false;
+			get { return base.Questions; }
+			set { base.Questions = (value ?? new List<DnsQuestion>()); }
 		}
 
-		protected internal override DnsMessageBase CreateFailureResponse()
+		/// <summary>
+		///   Gets or sets the entries in the answer records section
+		/// </summary>
+		public new List<DnsRecordBase> AnswerRecords
 		{
-			throw new NotSupportedException();
+			get { return base.AnswerRecords; }
+			set { base.AnswerRecords = (value ?? new List<DnsRecordBase>()); }
+		}
+
+		/// <summary>
+		///   Gets or sets the entries in the authority records section
+		/// </summary>
+		public new List<DnsRecordBase> AuthorityRecords
+		{
+			get { return base.AuthorityRecords; }
+			set { base.AuthorityRecords = (value ?? new List<DnsRecordBase>()); }
+		}
+
+		internal override bool IsTcpUsingRequested => (Questions.Count > 0) && ((Questions[0].RecordType == RecordType.Axfr) || (Questions[0].RecordType == RecordType.Ixfr));
+
+		internal override bool IsTcpResendingRequested => IsTruncated;
+
+		internal override bool IsTcpNextMessageWaiting(bool isSubsequentResponseMessage)
+		{
+			return false;
 		}
 	}
 }

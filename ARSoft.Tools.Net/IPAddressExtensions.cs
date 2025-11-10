@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -38,7 +38,8 @@ namespace ARSoft.Tools.Net
 		/// <returns> New instance of IPAddress with reversed address </returns>
 		public static IPAddress Reverse(this IPAddress ipAddress)
 		{
-			_ = ipAddress ?? throw new ArgumentNullException(nameof(ipAddress));
+			if (ipAddress == null)
+				throw new ArgumentNullException(nameof(ipAddress));
 
 			byte[] addressBytes = ipAddress.GetAddressBytes();
 			byte[] res = new byte[addressBytes.Length];
@@ -59,8 +60,11 @@ namespace ARSoft.Tools.Net
 		/// <returns> New instance of IPAddress with the network address assigend </returns>
 		public static IPAddress GetNetworkAddress(this IPAddress ipAddress, IPAddress netmask)
 		{
-			_ = ipAddress ?? throw new ArgumentNullException(nameof(ipAddress));
-			_ = netmask ?? throw new ArgumentNullException(nameof(netmask));
+			if (ipAddress == null)
+				throw new ArgumentNullException(nameof(ipAddress));
+
+			if (netmask == null)
+				throw new ArgumentNullException(nameof(netmask));
 
 			if (ipAddress.AddressFamily != netmask.AddressFamily)
 				throw new ArgumentOutOfRangeException(nameof(netmask), "Protocoll version of ipAddress and netmask do not match");
@@ -85,7 +89,8 @@ namespace ARSoft.Tools.Net
 		/// <returns> New instance of IPAddress with the network address assigend </returns>
 		public static IPAddress GetNetworkAddress(this IPAddress ipAddress, int netmask)
 		{
-			_ = ipAddress ?? throw new ArgumentNullException(nameof(ipAddress));
+			if (ipAddress == null)
+				throw new ArgumentNullException(nameof(ipAddress));
 
 			if ((ipAddress.AddressFamily == AddressFamily.InterNetwork) && ((netmask < 0) || (netmask > 32)))
 				throw new ArgumentException("Netmask have to be in range of 0 to 32 on IPv4 addresses", nameof(netmask));
@@ -107,7 +112,6 @@ namespace ARSoft.Tools.Net
 					{
 						ipAddressBytes[i] &= ReverseBitOrder((byte) ~(255 << netmask));
 					}
-
 					netmask = 0;
 				}
 			}
@@ -122,7 +126,8 @@ namespace ARSoft.Tools.Net
 		/// <returns> A string with the reverse lookup address </returns>
 		public static string GetReverseLookupAddress(this IPAddress ipAddress)
 		{
-			_ = ipAddress ?? throw new ArgumentNullException(nameof(ipAddress));
+			if (ipAddress == null)
+				throw new ArgumentNullException(nameof(ipAddress));
 
 			StringBuilder res = new StringBuilder();
 
@@ -135,7 +140,6 @@ namespace ARSoft.Tools.Net
 					res.Append(addressBytes[i]);
 					res.Append(".");
 				}
-
 				res.Append("in-addr.arpa");
 			}
 			else
@@ -162,7 +166,8 @@ namespace ARSoft.Tools.Net
 		/// <returns> A DomainName with the reverse lookup address </returns>
 		public static DomainName GetReverseLookupDomain(this IPAddress ipAddress)
 		{
-			_ = ipAddress ?? throw new ArgumentNullException(nameof(ipAddress));
+			if (ipAddress == null)
+				throw new ArgumentNullException(nameof(ipAddress));
 
 			byte[] addressBytes = ipAddress.GetAddressBytes();
 
@@ -213,7 +218,8 @@ namespace ARSoft.Tools.Net
 		/// <returns> true, if the given address is a multicast address; otherwise, false </returns>
 		public static bool IsMulticast(this IPAddress ipAddress)
 		{
-			_ = ipAddress ?? throw new ArgumentNullException(nameof(ipAddress));
+			if (ipAddress == null)
+				throw new ArgumentNullException(nameof(ipAddress));
 
 			if (ipAddress.AddressFamily == AddressFamily.InterNetwork)
 			{
@@ -232,7 +238,8 @@ namespace ARSoft.Tools.Net
 		/// <returns> The index for the interface which has the ip address assigned </returns>
 		public static int GetInterfaceIndex(this IPAddress ipAddress)
 		{
-			_ = ipAddress ?? throw new ArgumentNullException(nameof(ipAddress));
+			if (ipAddress == null)
+				throw new ArgumentNullException(nameof(ipAddress));
 
 			var interfaceProperty = NetworkInterface.GetAllNetworkInterfaces().Select(n => n.GetIPProperties()).FirstOrDefault(p => p.UnicastAddresses.Any(a => a.Address.Equals(ipAddress)));
 

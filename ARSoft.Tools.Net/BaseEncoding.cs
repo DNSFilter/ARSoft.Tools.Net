@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,7 +27,7 @@ namespace ARSoft.Tools.Net
 	///   <para>Extension class for encoding and decoding Base16, Base32 and Base64</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see>
 	///   </para>
 	/// </summary>
 	public static class BaseEncoding
@@ -61,7 +61,7 @@ namespace ARSoft.Tools.Net
 		private static readonly Dictionary<char, byte> _base16ReverseAlphabet = GetAlphabet(_BASE16_ALPHABET, true);
 
 		/// <summary>
-		///   Decodes a Base16 string as described in <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   Decodes a Base16 string as described in <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see> .
 		/// </summary>
 		/// <param name="inData"> An Base16 encoded string. </param>
 		/// <returns> Decoded data </returns>
@@ -71,7 +71,7 @@ namespace ARSoft.Tools.Net
 		}
 
 		/// <summary>
-		///   Decodes a Base16 char array as described in <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   Decodes a Base16 char array as described in <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see> .
 		/// </summary>
 		/// <param name="inData"> An Base16 encoded char array. </param>
 		/// <param name="offset"> An offset in inData. </param>
@@ -94,7 +94,11 @@ namespace ARSoft.Tools.Net
 
 		/// <summary>
 		///   Converts a byte array to its corresponding Base16 encoding described in
-		///   <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   <see
+		///     cref="!:http://tools.ietf.org/html/rfc4648">
+		///     RFC 4648
+		///   </see>
+		///   .
 		/// </summary>
 		/// <param name="inArray"> An array of 8-bit unsigned integers. </param>
 		/// <returns> Encoded string </returns>
@@ -105,7 +109,11 @@ namespace ARSoft.Tools.Net
 
 		/// <summary>
 		///   Converts a byte array to its corresponding Base16 encoding described in
-		///   <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   <see
+		///     cref="!:http://tools.ietf.org/html/rfc4648">
+		///     RFC 4648
+		///   </see>
+		///   .
 		/// </summary>
 		/// <param name="inArray"> An array of 8-bit unsigned integers. </param>
 		/// <param name="offset"> An offset in inArray. </param>
@@ -135,7 +143,7 @@ namespace ARSoft.Tools.Net
 		private static readonly Dictionary<char, byte> _base32ReverseAlphabet = GetAlphabet(_BASE32_ALPHABET, true);
 
 		/// <summary>
-		///   Decodes a Base32 string as described in <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   Decodes a Base32 string as described in <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see> .
 		/// </summary>
 		/// <param name="inData"> An Base32 encoded string. </param>
 		/// <returns> Decoded data </returns>
@@ -145,7 +153,7 @@ namespace ARSoft.Tools.Net
 		}
 
 		/// <summary>
-		///   Decodes a Base32 char array as described in <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   Decodes a Base32 char array as described in <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see> .
 		/// </summary>
 		/// <param name="inData"> An Base32 encoded char array. </param>
 		/// <param name="offset"> An offset in inData. </param>
@@ -158,7 +166,11 @@ namespace ARSoft.Tools.Net
 
 		/// <summary>
 		///   Converts a byte array to its corresponding Base32 encoding described in
-		///   <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   <see
+		///     cref="!:http://tools.ietf.org/html/rfc4648">
+		///     RFC 4648
+		///   </see>
+		///   .
 		/// </summary>
 		/// <param name="inArray"> An array of 8-bit unsigned integers. </param>
 		/// <returns> Encoded string </returns>
@@ -169,7 +181,11 @@ namespace ARSoft.Tools.Net
 
 		/// <summary>
 		///   Converts a byte array to its corresponding Base32 encoding described in
-		///   <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   <see
+		///     cref="!:http://tools.ietf.org/html/rfc4648">
+		///     RFC 4648
+		///   </see>
+		///   .
 		/// </summary>
 		/// <param name="inArray"> An array of 8-bit unsigned integers. </param>
 		/// <param name="offset"> An offset in inArray. </param>
@@ -185,7 +201,7 @@ namespace ARSoft.Tools.Net
 		private static readonly Dictionary<char, byte> _base32HexReverseAlphabet = GetAlphabet(_BASE32_HEX_ALPHABET, true);
 
 		/// <summary>
-		///   Decodes a Base32Hex string as described in <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   Decodes a Base32Hex string as described in <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see> .
 		/// </summary>
 		/// <param name="inData"> An Base32Hex encoded string. </param>
 		/// <returns> Decoded data </returns>
@@ -195,7 +211,7 @@ namespace ARSoft.Tools.Net
 		}
 
 		/// <summary>
-		///   Decodes a Base32Hex char array as described in <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   Decodes a Base32Hex char array as described in <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see> .
 		/// </summary>
 		/// <param name="inData"> An Base32Hex encoded char array. </param>
 		/// <param name="offset"> An offset in inData. </param>
@@ -208,7 +224,11 @@ namespace ARSoft.Tools.Net
 
 		/// <summary>
 		///   Converts a byte array to its corresponding Base32Hex encoding described in
-		///   <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   <see
+		///     cref="!:http://tools.ietf.org/html/rfc4648">
+		///     RFC 4648
+		///   </see>
+		///   .
 		/// </summary>
 		/// <param name="inArray"> An array of 8-bit unsigned integers. </param>
 		/// <returns> Encoded string </returns>
@@ -219,7 +239,11 @@ namespace ARSoft.Tools.Net
 
 		/// <summary>
 		///   Converts a byte array to its corresponding Base32Hex encoding described in
-		///   <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   <see
+		///     cref="!:http://tools.ietf.org/html/rfc4648">
+		///     RFC 4648
+		///   </see>
+		///   .
 		/// </summary>
 		/// <param name="inArray"> An array of 8-bit unsigned integers. </param>
 		/// <param name="offset"> An offset in inArray. </param>
@@ -232,9 +256,6 @@ namespace ARSoft.Tools.Net
 
 		private static byte[] FromBase32CharArray(this char[] inData, int offset, int length, Dictionary<char, byte> alphabet)
 		{
-			if (length == 0)
-				return Array.Empty<byte>();
-
 			int paddingCount = 0;
 			while (paddingCount < 6)
 			{
@@ -281,7 +302,7 @@ namespace ARSoft.Tools.Net
 				}
 
 				res[outPos++] = (byte) ((buffer[0] << 3) | ((buffer[1] >> 2) & 0x07));
-				res[outPos++] = (byte) (((buffer[1] << 6) & 0xc0) | (buffer[2] << 1) | ((buffer[3] >> 4) & 0x01));
+				res[outPos++] = (byte) (((buffer[1] >> 6) & 0xc0) | (buffer[2] << 1) | ((buffer[3] >> 4) & 0x01));
 				res[outPos++] = (byte) (((buffer[3] << 4) & 0xf0) | ((buffer[4] >> 1) & 0x0f));
 				res[outPos++] = (byte) (((buffer[4] << 7) & 0x80) | (buffer[5] << 2) | ((buffer[6] >> 3) & 0x03));
 				res[outPos++] = (byte) (((buffer[6] << 5) & 0xe0) | buffer[7]);
@@ -301,16 +322,16 @@ namespace ARSoft.Tools.Net
 						break;
 					case 2:
 						res[outPos++] = (byte) ((buffer[0] << 3) | ((buffer[1] >> 2) & 0x07));
-						res[outPos] = (byte) (((buffer[1] << 6) & 0xc0) | (buffer[2] << 1) | ((buffer[3] >> 4) & 0x01));
+						res[outPos] = (byte) (((buffer[1] >> 6) & 0xc0) | (buffer[2] << 1) | ((buffer[3] >> 4) & 0x01));
 						break;
 					case 3:
 						res[outPos++] = (byte) ((buffer[0] << 3) | ((buffer[1] >> 2) & 0x07));
-						res[outPos++] = (byte) (((buffer[1] << 6) & 0xc0) | (buffer[2] << 1) | ((buffer[3] >> 4) & 0x01));
+						res[outPos++] = (byte) (((buffer[1] >> 6) & 0xc0) | (buffer[2] << 1) | ((buffer[3] >> 4) & 0x01));
 						res[outPos] = (byte) (((buffer[3] << 4) & 0xf0) | ((buffer[4] >> 1) & 0x0f));
 						break;
 					case 4:
 						res[outPos++] = (byte) ((buffer[0] << 3) | ((buffer[1] >> 2) & 0x07));
-						res[outPos++] = (byte) (((buffer[1] << 6) & 0xc0) | (buffer[2] << 1) | ((buffer[3] >> 4) & 0x01));
+						res[outPos++] = (byte) (((buffer[1] >> 6) & 0xc0) | (buffer[2] << 1) | ((buffer[3] >> 4) & 0x01));
 						res[outPos++] = (byte) (((buffer[3] << 4) & 0xf0) | ((buffer[4] >> 1) & 0x0f));
 						res[outPos] = (byte) (((buffer[4] << 7) & 0x80) | (buffer[5] << 2) | ((buffer[6] >> 3) & 0x03));
 						break;
@@ -397,7 +418,7 @@ namespace ARSoft.Tools.Net
 		private static readonly Dictionary<char, byte> _base64ReverseAlphabet = GetAlphabet(_BASE64_ALPHABET, false);
 
 		/// <summary>
-		///   Decodes a Base64 string as described in <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   Decodes a Base64 string as described in <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see> .
 		/// </summary>
 		/// <param name="inData"> An Base64 encoded string. </param>
 		/// <returns> Decoded data </returns>
@@ -407,7 +428,7 @@ namespace ARSoft.Tools.Net
 		}
 
 		/// <summary>
-		///   Decodes a Base64 char array as described in <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   Decodes a Base64 char array as described in <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see> .
 		/// </summary>
 		/// <param name="inData"> An Base64 encoded char array. </param>
 		/// <param name="offset"> An offset in inData. </param>
@@ -415,12 +436,16 @@ namespace ARSoft.Tools.Net
 		/// <returns> Decoded data </returns>
 		public static byte[] FromBase64CharArray(this char[] inData, int offset, int length)
 		{
-			return inData.FromBase64CharArray(0, offset, length, _base64ReverseAlphabet);
+			return inData.FromBase64CharArray(offset, length, _base64ReverseAlphabet);
 		}
 
 		/// <summary>
 		///   Converts a byte array to its corresponding Base64 encoding described in
-		///   <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   <see
+		///     cref="!:http://tools.ietf.org/html/rfc4648">
+		///     RFC 4648
+		///   </see>
+		///   .
 		/// </summary>
 		/// <param name="inArray"> An array of 8-bit unsigned integers. </param>
 		/// <returns> Encoded string </returns>
@@ -431,7 +456,11 @@ namespace ARSoft.Tools.Net
 
 		/// <summary>
 		///   Converts a byte array to its corresponding Base64 encoding described in
-		///   <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   <see
+		///     cref="!:http://tools.ietf.org/html/rfc4648">
+		///     RFC 4648
+		///   </see>
+		///   .
 		/// </summary>
 		/// <param name="inArray"> An array of 8-bit unsigned integers. </param>
 		/// <param name="offset"> An offset in inArray. </param>
@@ -447,7 +476,7 @@ namespace ARSoft.Tools.Net
 		private static readonly Dictionary<char, byte> _base64UrlReverseAlphabet = GetAlphabet(_BASE64_URL_ALPHABET, false);
 
 		/// <summary>
-		///   Decodes a Base64Url string as described in <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   Decodes a Base64Url string as described in <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see> .
 		/// </summary>
 		/// <param name="inData"> An Base64Url encoded string. </param>
 		/// <returns> Decoded data </returns>
@@ -456,13 +485,8 @@ namespace ARSoft.Tools.Net
 			return inData.ToCharArray().FromBase64UrlCharArray(0, inData.Length);
 		}
 
-		internal static byte[] FromBase64UrlString(this string inData, int prefixBytes)
-		{
-			return inData.ToCharArray().FromBase64CharArray(prefixBytes, 0, inData.Length, _base64UrlReverseAlphabet);
-		}
-
 		/// <summary>
-		///   Decodes a Base64Url char array as described in <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   Decodes a Base64Url char array as described in <see cref="!:http://tools.ietf.org/html/rfc4648">RFC 4648</see> .
 		/// </summary>
 		/// <param name="inData"> An Base64Url encoded char array. </param>
 		/// <param name="offset"> An offset in inData. </param>
@@ -470,12 +494,16 @@ namespace ARSoft.Tools.Net
 		/// <returns> Decoded data </returns>
 		public static byte[] FromBase64UrlCharArray(this char[] inData, int offset, int length)
 		{
-			return inData.FromBase64CharArray(0, offset, length, _base64UrlReverseAlphabet);
+			return inData.FromBase64CharArray(offset, length, _base64UrlReverseAlphabet);
 		}
 
 		/// <summary>
 		///   Converts a byte array to its corresponding Base64Url encoding described in
-		///   <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   <see
+		///     cref="!:http://tools.ietf.org/html/rfc4648">
+		///     RFC 4648
+		///   </see>
+		///   .
 		/// </summary>
 		/// <param name="inArray"> An array of 8-bit unsigned integers. </param>
 		/// <returns> Encoded string </returns>
@@ -486,7 +514,11 @@ namespace ARSoft.Tools.Net
 
 		/// <summary>
 		///   Converts a byte array to its corresponding Base64Url encoding described in
-		///   <a href="https://www.rfc-editor.org/rfc/rfc4648.html">RFC 4648</a>.
+		///   <see
+		///     cref="!:http://tools.ietf.org/html/rfc4648">
+		///     RFC 4648
+		///   </see>
+		///   .
 		/// </summary>
 		/// <param name="inArray"> An array of 8-bit unsigned integers. </param>
 		/// <param name="offset"> An offset in inArray. </param>
@@ -497,13 +529,10 @@ namespace ARSoft.Tools.Net
 			return inArray.ToBase64String(offset, length, _base64UrlAlphabet);
 		}
 
-		private static byte[] FromBase64CharArray(this char[] inData, int prefixBytes, int offset, int length, Dictionary<char, byte> alphabet)
+		private static byte[] FromBase64CharArray(this char[] inData, int offset, int length, Dictionary<char, byte> alphabet)
 		{
 			int paddingCount;
 			int remain;
-
-			if (length == 0)
-				return new byte[prefixBytes];
 
 			if (alphabet[inData[offset + length - 2]] == 64)
 			{
@@ -523,10 +552,10 @@ namespace ARSoft.Tools.Net
 
 			int outSafeLength = (length - paddingCount) / 4 * 3;
 
-			byte[] res = new byte[prefixBytes + outSafeLength + remain];
+			byte[] res = new byte[outSafeLength + remain];
 
 			int inPos = offset;
-			int outPos = prefixBytes;
+			int outPos = 0;
 
 			byte[] buffer = new byte[4];
 

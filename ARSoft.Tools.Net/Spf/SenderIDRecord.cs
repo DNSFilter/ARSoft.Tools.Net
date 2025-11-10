@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -28,27 +28,12 @@ namespace ARSoft.Tools.Net.Spf
 	///   <para>Parsed instance of the textual representation of a SenderID record</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc4406.html">RFC 4406</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc4406">RFC 4406</see>
 	///   </para>
 	/// </summary>
 	public class SenderIDRecord : SpfRecordBase
 	{
 		private static readonly Regex _prefixRegex = new Regex(@"^v=spf((?<version>1)|(?<version>2)\.(?<minor>\d)/(?<scopes>(([a-z0-9]+,)*[a-z0-9]+)))$", RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-		/// <summary>
-		///   Creates a new instance of the SenderIDRecord
-		/// </summary>
-		/// <param name="version">Version of the SenderID record</param>
-		/// <param name="minor">Minor Version of the SenderID record</param>
-		/// <param name="scopes">List of Scopes of the SenderID record</param>
-		/// <param name="terms">Modifiers and mechanisms of a record</param>
-		public SenderIDRecord(int version, int minor, List<SenderIDScope> scopes, List<SpfTerm> terms)
-			: base(terms)
-		{
-			Version = version;
-			MinorVersion = minor;
-			Scopes = scopes;
-		}
 
 		/// <summary>
 		///   Version of the SenderID record.
@@ -84,14 +69,14 @@ namespace ARSoft.Tools.Net.Spf
 				res.Append(".");
 				res.Append(MinorVersion);
 				res.Append("/");
-				res.Append(String.Join(",", Scopes.Where(s => s != SenderIDScope.Unknown).Select(s => EnumHelper<SenderIDScope>.ToString(s).ToLowerInvariant())));
+				res.Append(String.Join(",", Scopes.Where(s => s != SenderIDScope.Unknown).Select(s => EnumHelper<SenderIDScope>.ToString(s).ToLower())));
 			}
 
 			if ((Terms != null) && (Terms.Count > 0))
 			{
 				foreach (SpfTerm term in Terms)
 				{
-					SpfModifier? modifier = term as SpfModifier;
+					SpfModifier modifier = term as SpfModifier;
 					if ((modifier == null) || (modifier.Type != SpfModifierType.Unknown))
 					{
 						res.Append(" ");
@@ -121,7 +106,7 @@ namespace ARSoft.Tools.Net.Spf
 
 			int version;
 			int minor;
-			List<SenderIDScope>? scopes;
+			List<SenderIDScope> scopes;
 			if (!TryParsePrefix(terms[0], out version, out minor, out scopes))
 			{
 				return false;
@@ -133,11 +118,11 @@ namespace ARSoft.Tools.Net.Spf
 			}
 			else
 			{
-				return scopes!.Contains(scope);
+				return scopes.Contains(scope);
 			}
 		}
 
-		private static bool TryParsePrefix(string prefix, out int version, out int minor, out List<SenderIDScope>? scopes)
+		private static bool TryParsePrefix(string prefix, out int version, out int minor, out List<SenderIDScope> scopes)
 		{
 			Match match = _prefixRegex.Match(prefix);
 			if (!match.Success)
@@ -162,7 +147,7 @@ namespace ARSoft.Tools.Net.Spf
 		/// <param name="s"> Textual representation to check </param>
 		/// <param name="value"> Parsed SenderID record in case of successful parsing </param>
 		/// <returns> true in case of successful parsing </returns>
-		public static bool TryParse(string s, out SenderIDRecord? value)
+		public static bool TryParse(string s, out SenderIDRecord value)
 		{
 			if (String.IsNullOrEmpty(s))
 			{
@@ -180,17 +165,24 @@ namespace ARSoft.Tools.Net.Spf
 
 			int version;
 			int minor;
-			List<SenderIDScope>? scopes;
+			List<SenderIDScope> scopes;
 			if (!TryParsePrefix(terms[0], out version, out minor, out scopes))
 			{
 				value = null;
 				return false;
 			}
 
-			List<SpfTerm>? parsedTerms;
+			List<SpfTerm> parsedTerms;
 			if (TryParseTerms(terms, out parsedTerms))
 			{
-				value = new SenderIDRecord(version, minor, scopes!, parsedTerms!);
+				value =
+					new SenderIDRecord
+					{
+						Version = version,
+						MinorVersion = minor,
+						Scopes = scopes,
+						Terms = parsedTerms
+					};
 				return true;
 			}
 			else

@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -28,7 +28,7 @@ namespace ARSoft.Tools.Net.Dns
 	/// <summary>
 	///   Interface of a DNS resolver
 	/// </summary>
-	public interface IDnsResolver : IDisposable
+	public interface IDnsResolver
 	{
 		/// <summary>
 		///   Queries a dns resolver for specified records.

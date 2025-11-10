@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -16,7 +16,6 @@
 // limitations under the License.
 #endregion
 
-using ARSoft.Tools.Net.Dns.DynamicUpdate;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -30,7 +29,7 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>Well known services record</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc1035.html">RFC 1035</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc1035">RFC 1035</see>
 	///   </para>
 	/// </summary>
 	public class WksRecord : DnsRecordBase
@@ -50,8 +49,25 @@ namespace ARSoft.Tools.Net.Dns
 		/// </summary>
 		public List<ushort> Ports { get; private set; }
 
-		internal WksRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
-			: base(name, recordType, recordClass, timeToLive)
+		internal WksRecord() {}
+
+		/// <summary>
+		///   Creates a new instance of the WksRecord class
+		/// </summary>
+		/// <param name="name"> Name of the host </param>
+		/// <param name="timeToLive"> Seconds the record should be cached at most </param>
+		/// <param name="address"> IP address of the host </param>
+		/// <param name="protocol"> Type of the protocol </param>
+		/// <param name="ports"> List of ports which are supported by the host </param>
+		public WksRecord(DomainName name, int timeToLive, IPAddress address, ProtocolType protocol, List<ushort> ports)
+			: base(name, RecordType.Wks, RecordClass.INet, timeToLive)
+		{
+			Address = address ?? IPAddress.None;
+			Protocol = protocol;
+			Ports = ports ?? new List<ushort>();
+		}
+
+		internal override void ParseRecordData(byte[] resultData, int currentPosition, int length)
 		{
 			int endPosition = currentPosition + length;
 
@@ -76,30 +92,13 @@ namespace ARSoft.Tools.Net.Dns
 			}
 		}
 
-		internal WksRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
-			: base(name, recordType, recordClass, timeToLive)
+		internal override void ParseRecordData(DomainName origin, string[] stringRepresentation)
 		{
 			if (stringRepresentation.Length < 2)
 				throw new FormatException();
 
 			Address = IPAddress.Parse(stringRepresentation[0]);
 			Ports = stringRepresentation.Skip(1).Select(UInt16.Parse).ToList();
-		}
-
-		/// <summary>
-		///   Creates a new instance of the WksRecord class
-		/// </summary>
-		/// <param name="name"> Name of the host </param>
-		/// <param name="timeToLive"> Seconds the record should be cached at most </param>
-		/// <param name="address"> IP address of the host </param>
-		/// <param name="protocol"> Type of the protocol </param>
-		/// <param name="ports"> List of ports which are supported by the host </param>
-		public WksRecord(DomainName name, int timeToLive, IPAddress address, ProtocolType protocol, List<ushort> ports)
-			: base(name, RecordType.Wks, RecordClass.INet, timeToLive)
-		{
-			Address = address ?? IPAddress.None;
-			Protocol = protocol;
-			Ports = ports ?? new List<ushort>();
 		}
 
 		internal override string RecordDataToString()
@@ -111,7 +110,7 @@ namespace ARSoft.Tools.Net.Dns
 
 		protected internal override int MaximumRecordDataLength => 5 + Ports.Max() / 8 + 1;
 
-		protected internal override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
+		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
 		{
 			DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, Address.GetAddressBytes());
 			messageData[currentPosition++] = (byte) Protocol;
@@ -124,7 +123,6 @@ namespace ARSoft.Tools.Net.Dns
 				octet |= (byte) (1 << Math.Abs(bitPos - 7));
 				messageData[octetPosition] = octet;
 			}
-
 			currentPosition += Ports.Max() / 8 + 1;
 		}
 	}

@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -27,7 +27,7 @@ namespace ARSoft.Tools.Net.Dns
 	///   Hashed next owner
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc5155.html">RFC 5155</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc5155">RFC 5155</see>
 	///   </para>
 	/// </summary>
 	public class NSec3Record : DnsRecordBase
@@ -40,7 +40,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// <summary>
 		///   Flags of the record
 		/// </summary>
-		public NSec3Flags Flags { get; private set; }
+		public byte Flags { get; private set; }
 
 		/// <summary>
 		///   Number of iterations
@@ -55,43 +55,14 @@ namespace ARSoft.Tools.Net.Dns
 		/// <summary>
 		///   Binary data of hash of next owner
 		/// </summary>
-		public byte[] NextHashedOwner { get; internal set; }
+		public byte[] NextHashedOwnerName { get; internal set; }
 
 		/// <summary>
 		///   Types of next owner
 		/// </summary>
 		public List<RecordType> Types { get; private set; }
 
-		internal DomainName NextHashedOwnerName => new(NextHashedOwner.ToBase32HexString(), this.Name.GetParentName());
-
-		internal NSec3Record(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			int endPosition = currentPosition + length;
-
-			HashAlgorithm = (NSec3HashAlgorithm) resultData[currentPosition++];
-			Flags = (NSec3Flags) resultData[currentPosition++];
-			Iterations = DnsMessageBase.ParseUShort(resultData, ref currentPosition);
-			int saltLength = resultData[currentPosition++];
-			Salt = DnsMessageBase.ParseByteData(resultData, ref currentPosition, saltLength);
-			int hashLength = resultData[currentPosition++];
-			NextHashedOwner = DnsMessageBase.ParseByteData(resultData, ref currentPosition, hashLength);
-			Types = NSecRecord.ParseTypeBitMap(resultData, ref currentPosition, endPosition);
-		}
-
-		internal NSec3Record(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
-			: base(name, recordType, recordClass, timeToLive)
-		{
-			if (stringRepresentation.Length < 5)
-				throw new FormatException();
-
-			HashAlgorithm = (NSec3HashAlgorithm) Byte.Parse(stringRepresentation[0]);
-			Flags = (NSec3Flags) Byte.Parse(stringRepresentation[1]);
-			Iterations = UInt16.Parse(stringRepresentation[2]);
-			Salt = (stringRepresentation[3] == "-") ? new byte[] { } : stringRepresentation[3].FromBase16String();
-			NextHashedOwner = stringRepresentation[4].FromBase32HexString();
-			Types = stringRepresentation.Skip(5).Select(RecordTypeHelper.ParseShortString).ToList();
-		}
+		internal NSec3Record() {}
 
 		/// <summary>
 		///   Creates of new instance of the NSec3Record class
@@ -103,16 +74,16 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="flags"> Flags of the record </param>
 		/// <param name="iterations"> Number of iterations </param>
 		/// <param name="salt"> Binary data of salt </param>
-		/// <param name="nextHashedOwner"> Binary data of hash of next owner </param>
+		/// <param name="nextHashedOwnerName"> Binary data of hash of next owner </param>
 		/// <param name="types"> Types of next owner </param>
-		public NSec3Record(DomainName name, RecordClass recordClass, int timeToLive, NSec3HashAlgorithm hashAlgorithm, NSec3Flags flags, ushort iterations, byte[] salt, byte[] nextHashedOwner, List<RecordType> types)
+		public NSec3Record(DomainName name, RecordClass recordClass, int timeToLive, NSec3HashAlgorithm hashAlgorithm, byte flags, ushort iterations, byte[] salt, byte[] nextHashedOwnerName, List<RecordType> types)
 			: base(name, RecordType.NSec3, recordClass, timeToLive)
 		{
 			HashAlgorithm = hashAlgorithm;
 			Flags = flags;
 			Iterations = iterations;
 			Salt = salt ?? new byte[] { };
-			NextHashedOwner = nextHashedOwner ?? new byte[] { };
+			NextHashedOwnerName = nextHashedOwnerName ?? new byte[] { };
 
 			if ((types == null) || (types.Count == 0))
 			{
@@ -124,27 +95,54 @@ namespace ARSoft.Tools.Net.Dns
 			}
 		}
 
+		internal override void ParseRecordData(byte[] resultData, int currentPosition, int length)
+		{
+			int endPosition = currentPosition + length;
+
+			HashAlgorithm = (NSec3HashAlgorithm) resultData[currentPosition++];
+			Flags = resultData[currentPosition++];
+			Iterations = DnsMessageBase.ParseUShort(resultData, ref currentPosition);
+			int saltLength = resultData[currentPosition++];
+			Salt = DnsMessageBase.ParseByteData(resultData, ref currentPosition, saltLength);
+			int hashLength = resultData[currentPosition++];
+			NextHashedOwnerName = DnsMessageBase.ParseByteData(resultData, ref currentPosition, hashLength);
+			Types = NSecRecord.ParseTypeBitMap(resultData, ref currentPosition, endPosition);
+		}
+
+		internal override void ParseRecordData(DomainName origin, string[] stringRepresentation)
+		{
+			if (stringRepresentation.Length < 5)
+				throw new FormatException();
+
+			HashAlgorithm = (NSec3HashAlgorithm) Byte.Parse(stringRepresentation[0]);
+			Flags = Byte.Parse(stringRepresentation[1]);
+			Iterations = UInt16.Parse(stringRepresentation[2]);
+			Salt = (stringRepresentation[3] == "-") ? new byte[] { } : stringRepresentation[3].FromBase16String();
+			NextHashedOwnerName = stringRepresentation[4].FromBase32HexString();
+			Types = stringRepresentation.Skip(5).Select(RecordTypeHelper.ParseShortString).ToList();
+		}
+
 		internal override string RecordDataToString()
 		{
 			return (byte) HashAlgorithm
-			       + " " + (byte) Flags
+			       + " " + Flags
 			       + " " + Iterations
 			       + " " + ((Salt.Length == 0) ? "-" : Salt.ToBase16String())
-			       + " " + NextHashedOwner.ToBase32String()
+			       + " " + NextHashedOwnerName.ToBase32HexString()
 			       + " " + String.Join(" ", Types.Select(RecordTypeHelper.ToShortString));
 		}
 
-		protected internal override int MaximumRecordDataLength => 6 + Salt.Length + NextHashedOwner.Length + NSecRecord.GetMaximumTypeBitmapLength(Types);
+		protected internal override int MaximumRecordDataLength => 6 + Salt.Length + NextHashedOwnerName.Length + NSecRecord.GetMaximumTypeBitmapLength(Types);
 
-		protected internal override void EncodeRecordData(IList<byte> messageData, ref int currentPosition, Dictionary<DomainName, ushort>? domainNames, bool useCanonical)
+		protected internal override void EncodeRecordData(byte[] messageData, int offset, ref int currentPosition, Dictionary<DomainName, ushort> domainNames, bool useCanonical)
 		{
 			messageData[currentPosition++] = (byte) HashAlgorithm;
-			messageData[currentPosition++] = (byte) Flags;
+			messageData[currentPosition++] = Flags;
 			DnsMessageBase.EncodeUShort(messageData, ref currentPosition, Iterations);
 			messageData[currentPosition++] = (byte) Salt.Length;
 			DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, Salt);
-			messageData[currentPosition++] = (byte) NextHashedOwner.Length;
-			DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, NextHashedOwner);
+			messageData[currentPosition++] = (byte) NextHashedOwnerName.Length;
+			DnsMessageBase.EncodeByteArray(messageData, ref currentPosition, NextHashedOwnerName);
 
 			if (Types.Count > 0)
 				NSecRecord.EncodeTypeBitmap(messageData, ref currentPosition, Types);
@@ -152,16 +150,9 @@ namespace ARSoft.Tools.Net.Dns
 
 		internal bool IsCovering(DomainName name)
 		{
-			DomainName nextDomainName = new DomainName(NextHashedOwner.ToBase32String(), name.GetParentName());
+			DomainName nextDomainName = new DomainName(NextHashedOwnerName.ToBase32HexString(), name.GetParentName());
 
-			if (Name.CompareTo(nextDomainName) < 0)
-			{
-				return ((name.CompareTo(Name) > 0) && (name.CompareTo(nextDomainName) < 0));
-			}
-			else
-			{
-				return ((name.CompareTo(nextDomainName) < 0) || (name.CompareTo(Name) > 0));
-			}
+			return ((name.CompareTo(Name) > 0) && (name.CompareTo(nextDomainName) < 0));
 		}
 	}
 }

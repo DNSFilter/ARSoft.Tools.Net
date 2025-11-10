@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -26,28 +26,23 @@ namespace ARSoft.Tools.Net.Spf
 	/// <summary>
 	///   Base class of a SPF or SenderID record
 	/// </summary>
-	public abstract class SpfRecordBase
+	public class SpfRecordBase
 	{
 		/// <summary>
 		///   Modifiers and mechanisms of a record
 		/// </summary>
-		public List<SpfTerm> Terms { get; }
+		public List<SpfTerm> Terms { get; set; }
 
-		protected SpfRecordBase(List<SpfTerm> terms)
-		{
-			Terms = terms;
-		}
-
-		protected static bool TryParseTerms(string[] terms, out List<SpfTerm>? parsedTerms)
+		protected static bool TryParseTerms(string[] terms, out List<SpfTerm> parsedTerms)
 		{
 			parsedTerms = new List<SpfTerm>(terms.Length - 1);
 
 			for (int i = 1; i < terms.Length; i++)
 			{
-				SpfTerm? term;
+				SpfTerm term;
 				if (SpfTerm.TryParse(terms[i], out term))
 				{
-					parsedTerms.Add(term!);
+					parsedTerms.Add(term);
 				}
 				else
 				{

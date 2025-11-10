@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -18,30 +18,19 @@
 
 namespace ARSoft.Tools.Net
 {
-	internal static class TaskExtensions
-	{
-		public static async Task<T?> WithTimeout<T>(this Task<T> task, int timeout, CancellationToken token = default)
-		{
-			try
-			{
-				return await task.WaitAsync(TimeSpan.FromMilliseconds(timeout), token);
-			}
-			catch (TimeoutException)
-			{
-				return default;
-			}
-		}
+    /// <summary>
+    ///   Represents a Tls Pinset
+    /// </summary>
+    public class TlsPubkeyPinningHash
+    {
+        /// <summary>
+        /// Pinset digest method, this should be an enum
+        /// </summary>
+        public string Digest { get; set; }
 
-		public static async Task WithTimeout(this Task task, int timeout, CancellationToken token = default)
-		{
-			try
-			{
-				await task.WaitAsync(TimeSpan.FromMilliseconds(timeout), token);
-			}
-			catch (TimeoutException)
-			{
-				// ignore
-			}
-		}
-	}
+        /// <summary>
+        /// Pinset digest hash
+        /// </summary>
+        public string Hash { get; set; }
+    }
 }

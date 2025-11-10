@@ -1,5 +1,5 @@
 ﻿#region Copyright and License
-// Copyright 2010..2024 Alexander Reinert
+// Copyright 2010..2017 Alexander Reinert
 // 
 // This file is part of the ARSoft.Tools.Net - C# DNS client/server and SPF Library (https://github.com/alexreinert/ARSoft.Tools.Net)
 // 
@@ -28,17 +28,12 @@ namespace ARSoft.Tools.Net.Dns
 	///   <para>IPv6 address</para>
 	///   <para>
 	///     Defined in
-	///     <a href="https://www.rfc-editor.org/rfc/rfc3596.html">RFC 3596</a>.
+	///     <see cref="!:http://tools.ietf.org/html/rfc3596">RFC 3596</see>
 	///   </para>
 	/// </summary>
 	public class AaaaRecord : AddressRecordBase
 	{
-		internal AaaaRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, IList<byte> resultData, int currentPosition, int length)
-			: base(name, recordType, recordClass, timeToLive, resultData, currentPosition, length) { }
-
-
-		internal AaaaRecord(DomainName name, RecordType recordType, RecordClass recordClass, int timeToLive, DomainName origin, string[] stringRepresentation)
-			: base(name, recordType, recordClass, timeToLive, origin, stringRepresentation) { }
+		internal AaaaRecord() {}
 
 		/// <summary>
 		///   Creates a new instance of the AaaaRecord class
@@ -47,7 +42,7 @@ namespace ARSoft.Tools.Net.Dns
 		/// <param name="timeToLive"> Seconds the record should be cached at most </param>
 		/// <param name="address"> IP address of the host </param>
 		public AaaaRecord(DomainName name, int timeToLive, IPAddress address)
-			: base(name, RecordType.Aaaa, timeToLive, address ?? IPAddress.IPv6None) { }
+			: base(name, RecordType.Aaaa, timeToLive, address ?? IPAddress.IPv6None) {}
 
 		protected internal override int MaximumRecordDataLength => 16;
 	}
