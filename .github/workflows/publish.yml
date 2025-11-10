@@ -56,6 +56,8 @@ jobs:
           buildVersion=$(echo "$semanticReleaseOutput" | sed -n 's/.* The next release version is \(.*\)$/\1/gip')
           echo $buildVersion
           echo "BUILD_VERSION=$buildVersion" >> "$GITHUB_OUTPUT"
+          
+          Write-Host "Determined Version: $($buildVersion)"
 
   Build:
     runs-on: windows-latest
