@@ -3,20 +3,20 @@ on:
     branches: ["trunk"]
     
   # Uncomment below to introduce support for custom builds.
-  # workflow_dispatch: # For Custom Builds against other branches.
-  #   inputs:
-  #     suffix:
-  #       description: "This is the Version Suffix that's added to the package for a custom build. Make sure you enable the 'Include Prerelease' option when using NuGet Package Manager in order to see your build."
-  #       required: true
-  #       type: string
-  #     configuration:
-  #       description: "This is the build configuration used during packaging."
-  #       default: "Release"
-  #       required: true
-  #       type: choice
-  #       options:
-  #         - Release
-  #         - Debug
+  workflow_dispatch: # For Custom Builds against other branches.
+    inputs:
+      suffix:
+        description: "This is the Version Suffix that's added to the package for a custom build. Make sure you enable the 'Include Prerelease' option when using NuGet Package Manager in order to see your build."
+        required: true
+        type: string
+      configuration:
+        description: "This is the build configuration used during packaging."
+        default: "Release"
+        required: true
+        type: choice
+        options:
+          - Release
+          - Debug
 
 name: Publish DNSFilter.ARSoft.Tools.Net
 run-name: Publish DNSFilter.ARSoft.Tools.Net ${{ github.event_name == 'workflow_dispatch' && 'Custom Build' || 'Trunk Build' }}
@@ -119,4 +119,5 @@ jobs:
       - name: Upload Nuget Packages
         run: |
           dotnet nuget push "outputs/*.nupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}
+
           dotnet nuget push "outputs/*.snupkg" --api-key ${{ secrets.GITHUB_TOKEN }} --source https://nuget.pkg.github.com/${{ github.repository_owner }}
