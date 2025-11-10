@@ -51,13 +51,21 @@ jobs:
         id: semantic-release-dry-run
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: pwsh  
         run: |
-          semanticReleaseOutput=$(npx --yes -p @semantic-release/changelog -p @semantic-release/git -p @semantic-release/github -p conventional-changelog-conventionalcommits -p semantic-release semantic-release --dry-run)
-          buildVersion=$(echo "$semanticReleaseOutput" | sed -n 's/.* The next release version is \(.*\)$/\1/gip')
-          echo $buildVersion
-          echo "BUILD_VERSION=$buildVersion" >> "$GITHUB_OUTPUT"
+          $semanticReleaseOutput = npx --yes `
+              -p @semantic-release/changelog `
+              -p @semantic-release/git `
+              -p @semantic-release/github `
+              -p conventional-changelog-conventionalcommits `
+              -p semantic-release `
+              semantic-release --dry-run
+          $match = [regex]::Match($semanticReleaseOutput, 'The next release version is (.+)$', 'IgnoreCase,Multiline')
+          $buildVersion = if ($match.Success) { $match.Groups[1].Value } else { '' }
           
-          Write-Host "Determined Version: $($buildVersion)"
+          "BUILD_VERSION=$buildVersion" | Out-File -FilePath $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          
+          Write-Host "Determined Version: $buildVersion"
 
   Build:
     runs-on: windows-latest
