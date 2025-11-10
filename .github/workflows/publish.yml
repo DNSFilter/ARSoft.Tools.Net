@@ -5,6 +5,10 @@ on:
   # Uncomment below to introduce support for custom builds.
   workflow_dispatch: # For Custom Builds against other branches.
     inputs:
+      version:
+        description: "This is the Version Prefix that's used for a custom build. It must be a valid SemVer version (e.g., 1.2.3)."
+        required: true
+        type: string
       suffix:
         description: "This is the Version Suffix that's added to the package for a custom build. Make sure you enable the 'Include Prerelease' option when using NuGet Package Manager in order to see your build."
         required: true
@@ -39,6 +43,7 @@ jobs:
         run: apk add --update findutils git
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Fix GitHub and NPM
@@ -67,6 +72,11 @@ jobs:
              | awk 'match($0, /The next release version is (.+)$/, a){print a[1]; exit}'
            )
 
+           # If semantic-release didn't determine one, fallback to the manual input (if provided)
+           if [ -z "${buildVersion:-}" ] && [ -n "${{ inputs.version }}" ]; then
+             buildVersion="${{ inputs.version }}"
+           fi
+           
            echo "Determined Version: $buildVersion"
            echo "BUILD_VERSION=$buildVersion" >> "$GITHUB_OUTPUT"
 
