@@ -87,6 +87,7 @@ jobs:
     steps:
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref }}
           fetch-depth: 0
       - name: Pack Projects
         run: dotnet pack -c ${{ inputs.configuration || 'Release' }} -o outputs -p:VersionPrefix=${{ needs.Detect-Version.outputs.BUILD_VERSION }} -p:VersionSuffix=${{ inputs.suffix || '' }}
@@ -110,6 +111,7 @@ jobs:
         run: apk add --update findutils git
       - uses: actions/checkout@v4
         with:
+          ref: ${{ inputs.ref }}
           fetch-depth: 0
           token: ${{ secrets.GITHUB_TOKEN }}
       - name: Fix GitHub and NPM
